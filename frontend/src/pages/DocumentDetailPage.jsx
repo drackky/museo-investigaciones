@@ -40,12 +40,9 @@ const DocumentDetailPage = () => {
     incrementViewCount();
   }, [id]);
 
-  const loadDocument = async () => {
+const loadDocument = async () => {
     try {
       setIsLoading(true);
-      
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2000);
       
       const token = localStorage.getItem('token');
       
@@ -54,11 +51,8 @@ const DocumentDetailPage = () => {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
-        },
-        signal: controller.signal
+        }
       });
-
-      clearTimeout(timeoutId);
 
       // Si el API Gateway falla, intentar conexión directa al servicio
       if (!response.ok) {
@@ -74,12 +68,11 @@ const DocumentDetailPage = () => {
       if (response.ok) {
         const data = await response.json();
         setDocument(data.document);
+        setIsLoading(false);
         return;
       }
     } catch (err) {
-      if (err.name !== 'AbortError') {
-        console.error('Error cargando documento:', err.message);
-      }
+      console.error('Error cargando documento:', err.message);
     }
 
     // Usar documento demo
@@ -158,50 +151,31 @@ const DocumentDetailPage = () => {
     setIsLoading(false);
   };
 
-  const loadDocumentInteractions = async () => {
+const loadDocumentInteractions = async () => {
     try {
-      // Intentar cargar desde API
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2000);
-      
       const token = localStorage.getItem('token');
       const response = await fetch(`http://localhost:5000/api/v1/documents/${id}/interactions`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
-        },
-        signal: controller.signal
+        }
       });
-
-      clearTimeout(timeoutId);
 
       if (response.ok) {
         const data = await response.json();
-        setLikesCount(data.likesCount || 0);
-        setFavoritesCount(data.favoritesCount || 0);
-        setViewsCount(data.viewsCount || 0);
-        setDownloadsCount(data.downloadsCount || 0);
-        setRating(data.averageRating || 0);
-        setIsLiked(data.userLiked || false);
-        setIsFavorited(data.userFavorited || false);
-        setUserRating(data.userRating || 0);
-        return;
+        setLikesCount(data.likes || 0);
+        setFavoritesCount(data.favorites || 0);
+        setViewsCount(data.views || 0);
+        setDownloadsCount(data.downloads || 0);
+        setRating(data.average_rating || 0);
+        setIsLiked(data.is_liked || false);
+        setIsFavorited(data.is_favorited || false);
+        setUserRating(data.user_rating || 0);
       }
     } catch (err) {
-      if (err.name !== 'AbortError') {
-        console.error('Error cargando interacciones:', err.message);
-      }
+      console.error('Error cargando interacciones:', err.message);
     }
-
-    // Datos demo para interacciones
-    setLikesCount(Math.floor(Math.random() * 50) + 10);
-    setFavoritesCount(Math.floor(Math.random() * 20) + 5);
-    setViewsCount(Math.floor(Math.random() * 500) + 100);
-    setDownloadsCount(Math.floor(Math.random() * 100) + 25);
-    setRating(Math.random() * 2 + 3); // Entre 3 y 5
-    setCommentsCount(Math.floor(Math.random() * 15) + 3);
   };
-
   const loadComments = async () => {
     try {
       const controller = new AbortController();
@@ -527,24 +501,35 @@ const DocumentDetailPage = () => {
     }
   };
 
-  const downloadFile = async (archivo) => {
-    try {
-      const token = localStorage.getItem('token');
-      await fetch(`http://localhost:5000/api/v1/documents/${id}/download/${archivo.nombre}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        }
-      });
-    } catch (err) {
-      console.log('Descarga registrada en modo demo');
-    }
-    
-    // Incrementar contador de descargas
-    setDownloadsCount(prev => prev + 1);
-    success(`Descargando: ${archivo.nombre}`);
-  };
+  const downloadFile = async () => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`http://localhost:5002/api/v1/documents/${id}/download`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      }
+    });
 
+    if (response.ok) {
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = window.document.createElement('a');
+      a.href = url;
+      a.download = document.archivo_original || 'documento';
+      window.document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      setDownloadsCount(prev => prev + 1);
+      success('Descarga iniciada');
+    } else {
+      error('Error al descargar el documento');
+    }
+  } catch (err) {
+    error('Error de conexión al descargar');
+  }
+};
   if (isLoading) {
     return (
       <div className="document-detail-page">
@@ -773,7 +758,31 @@ const DocumentDetailPage = () => {
                 </div>
               </div>
             )}
-
+{/* Descarga del archivo real */}
+{document.archivo_original && (
+  <div className="document-content-card">
+    <h2>Archivo disponible</h2>
+    <div className="file-item">
+      <div className="file-info">
+        <div className="file-details">
+          <div className="file-name">{document.archivo_original}</div>
+          <div className="file-meta">
+            <span className="file-size">{formatFileSize(document.tamaño_archivo)}</span>
+          </div>
+        </div>
+      </div>
+      <button
+        onClick={() => downloadFile()}
+        className="btn btn-primary btn-small"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"/>
+        </svg>
+        Descargar
+      </button>
+    </div>
+  </div>
+)}
             {/* Colecciones */}
             {document.colecciones && document.colecciones.length > 0 && (
               <div className="document-content-card">
