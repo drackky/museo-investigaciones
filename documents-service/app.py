@@ -724,6 +724,37 @@ def create_tables():
         logger.error(f'Error creando tablas: {str(e)}')
 
 # =============================================================================
+# RUTAS DE ESTADÍSTICAS
+# =============================================================================
+
+@app.route('/api/v1/documents/stats', methods=['GET'])
+def get_documents_stats():
+    """Obtener estadísticas de documentos"""
+    try:
+        total_documents = Document.query.filter_by(is_publico=True).count()
+        total_private = Document.query.filter_by(is_publico=False).count()
+        total_views = db.session.query(db.func.sum(Document.visualizaciones)).scalar() or 0
+        
+        # Documentos por categoría
+        category_stats = db.session.query(
+            Document.categoria,
+            db.func.count(Document.id).label('count')
+        ).filter_by(is_publico=True).group_by(Document.categoria).all()
+        
+        return jsonify({
+            'total_documents': total_documents,
+            'total_private': total_private,
+            'total_views': total_views,
+            'categories': {
+                cat: count for cat, count in category_stats if cat
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f'Error obteniendo estadísticas: {str(e)}')
+        return jsonify({'error': 'Error interno del servidor'}), 500
+
+# =============================================================================
 # RUTAS DE INTERACCIONES Y VISTAS
 # =============================================================================
 

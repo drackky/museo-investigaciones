@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContextSimple';
 import { useNotifications } from '../components/NotificationProvider';
+import apiService from '../services/apiService';
 
 const NewCollectionPage = () => {
   const [formData, setFormData] = useState({
@@ -172,37 +173,9 @@ const NewCollectionPage = () => {
         }
       });
 
-      const token = localStorage.getItem('token');
-      
-      // Intentar primero con API Gateway
-      let response = await fetch('http://localhost:5000/api/v1/collections', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formDataToSend
-      });
-
-      // Si API Gateway falla, intentar conexión directa
-      if (!response.ok) {
-        console.warn('API Gateway falló, intentando conexión directa');
-        response = await fetch('http://localhost:5003/api/v1/collections', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          },
-          body: formDataToSend
-        });
-      }
-
-      if (response.ok) {
-        const data = await response.json();
-        success('Colección creada exitosamente');
-        navigate(`/cols/${data.collection.id}`);
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error al crear la colección');
-      }
+      const data = await apiService.collections.create(formDataToSend);
+      success('Colección creada exitosamente');
+      navigate(`/cols/${data.collection.id}`);
     } catch (err) {
       console.error('Error creando colección:', err);
       error(err.message || 'Error al crear la colección. Inténtalo de nuevo.');

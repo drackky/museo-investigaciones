@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContextSimple';
 import { useNotifications } from '../components/NotificationProvider';
+import { apiService } from '../services/apiService';
 import { formatDate, formatFileSize, formatRelativeTime } from '../utils';
 
 const DocumentDetailPage = () => {
@@ -30,6 +31,10 @@ const DocumentDetailPage = () => {
   const [showComments, setShowComments] = useState(true);
   const [commentsCount, setCommentsCount] = useState(0);
   
+  const [userCache, setUserCache] = useState({});
+  const [editingCommentId, setEditingCommentId] = useState(null);
+  const [editingContent, setEditingContent] = useState('');
+
   const { isAuthenticated, isResearcher, user } = useAuth();
   const { error, success } = useNotifications();
 
@@ -44,29 +49,8 @@ const loadDocument = async () => {
     try {
       setIsLoading(true);
       
-      const token = localStorage.getItem('token');
-      
-      // Intentar primero con API Gateway
-      let response = await fetch(`http://localhost:5000/api/v1/documents/${id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        }
-      });
-
-      // Si el API Gateway falla, intentar conexión directa al servicio
-      if (!response.ok) {
-        console.warn('API Gateway falló, intentando conexión directa al servicio de documentos');
-        response = await fetch(`http://localhost:5002/api/v1/documents/${id}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          }
-        });
-      }
-
-      if (response.ok) {
-        const data = await response.json();
+      const data = await apiService.documents.getById(id);
+      if (data && data.document) {
         setDocument(data.document);
         setIsLoading(false);
         return;
@@ -75,213 +59,86 @@ const loadDocument = async () => {
       console.error('Error cargando documento:', err.message);
     }
 
-    // Usar documento demo
-    console.log('Usando documento demo');
-    const mockDocument = {
-      id: parseInt(id),
-      titulo: 'Manuscrito Medieval del Siglo XV',
-      descripcion: `Este extraordinario manuscrito medieval representa una ventana única al pasado, 
-        ofreciendo una perspectiva invaluable sobre las prácticas comerciales, sociales y culturales 
-        del siglo XV. Descubierto en los archivos de la Catedral de León durante una restauración 
-        en 1987, este documento ha sido cuidadosamente preservado y digitalizado para garantizar 
-        su accesibilidad para futuras generaciones de investigadores.
-        
-        El manuscrito contiene referencias detalladas a rutas comerciales medievales, sistemas 
-        monetarios de la época, y regulaciones gremiales que gobernaban el comercio textil en 
-        la región de Castilla y León. Particularmente notable es la sección que describe los 
-        acuerdos comerciales entre los mercaderes locales y los comerciantes extranjeros, 
-        proporcionando evidencia crucial sobre las redes comerciales internacionales del período.
-        
-        La caligrafía gótica utilizada en el documento sugiere que fue creado por un escriba 
-        profesional, posiblemente asociado con la administración real o eclesiástica. Las 
-        ilustraciones marginales incluyen representaciones de herramientas comerciales, 
-        símbolos gremiales, y decoraciones típicas del arte medieval tardío.`,
-      autor: 'Anónimo (Escriba Real)',
-      categoria: 'Manuscritos Medievales',
-      subcategoria: 'Documentos Comerciales',
-      fecha_creacion: new Date().toISOString(),
-      fecha_documento: '1456-03-15',
-      tamaño: 2048576,
-      formato: 'Pergamino digitalizado (PDF, TIFF)',
-      idioma: 'Latín medieval',
-      estado_conservacion: 'Bueno',
-      procedencia: 'Catedral de León, Archivo Histórico',
-      derechos: 'Dominio público',
-      digitalizacion: {
-        fecha: '2020-08-15',
-        resolucion: '600 DPI',
-        formato_digital: 'TIFF sin compresión',
-        calidad: 'Alta resolución'
-      },
-      etiquetas: ['medieval', 'comercio', 'historia', 'castilla', 'león', 'manuscrito', 'siglo-xv'],
-      colecciones: [
-        { id: 1, nombre: 'Manuscritos Medievales' },
-        { id: 3, nombre: 'Historia Comercial Española' }
-      ],
-      archivos: [
-        {
-          nombre: 'manuscrito_original.pdf',
-          tamaño: 1548576,
-          tipo: 'application/pdf',
-          descripcion: 'Versión completa digitalizada'
-        },
-        {
-          nombre: 'transcripcion.txt',
-          tamaño: 45632,
-          tipo: 'text/plain',
-          descripcion: 'Transcripción paleográfica'
-        },
-        {
-          nombre: 'traduccion_castellano.pdf',
-          tamaño: 234567,
-          tipo: 'application/pdf',
-          descripcion: 'Traducción al castellano moderno'
-        }
-      ],
-      metadatos: {
-        catalogador: 'Dr. María González Ruiz',
-        fecha_catalogacion: '2020-09-10',
-        revision: '2023-03-15',
-        nivel_acceso: 'Público',
-        restricciones: 'Ninguna'
-      }
-    };
-    
-    setDocument(mockDocument);
     setIsLoading(false);
   };
 
 const loadDocumentInteractions = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/v1/documents/${id}/interactions`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setLikesCount(data.likes || 0);
-        setFavoritesCount(data.favorites || 0);
-        setViewsCount(data.views || 0);
-        setDownloadsCount(data.downloads || 0);
-        setRating(data.average_rating || 0);
-        setIsLiked(data.is_liked || false);
-        setIsFavorited(data.is_favorited || false);
-        setUserRating(data.user_rating || 0);
-      }
+      const data = await apiService.get(`/documents/${id}/interactions`);
+      setLikesCount(data.likes || 0);
+      setFavoritesCount(data.favorites || 0);
+      setViewsCount(data.views || 0);
+      setDownloadsCount(data.downloads || 0);
+      setRating(data.average_rating || 0);
+      setIsLiked(data.is_liked || false);
+      setIsFavorited(data.is_favorited || false);
+      setUserRating(data.user_rating || 0);
     } catch (err) {
       console.error('Error cargando interacciones:', err.message);
     }
   };
+  const resolveUserNames = async (commentsList) => {
+    const userIds = new Set();
+    const collectIds = (items) => {
+      items.forEach(c => {
+        if (c.user_id) userIds.add(c.user_id);
+        if (c.replies) collectIds(c.replies);
+      });
+    };
+    collectIds(commentsList);
+
+    const missingIds = [...userIds].filter(uid => !userCache[uid]);
+    if (missingIds.length === 0) return;
+
+    try {
+      const data = await apiService.get('/users/profile');
+      // Use individual user lookups for each missing ID
+      const cache = { ...userCache };
+      for (const uid of missingIds) {
+        try {
+          const userData = await apiService.get(`/auth/users/${uid}`);
+          if (userData && userData.user) {
+            cache[uid] = userData.user.nombre || userData.user.email || `Usuario #${uid}`;
+          }
+        } catch {
+          cache[uid] = `Usuario #${uid}`;
+        }
+      }
+      setUserCache(cache);
+    } catch (err) {
+      console.error('Error resolviendo nombres de usuario:', err);
+    }
+  };
+
+  const mapComment = (c) => ({
+    ...c,
+    fecha: c.created_at || c.fecha,
+    autor: userCache[c.user_id] || `Usuario #${c.user_id}`,
+    likes: c.likes_count ?? c.likes ?? 0,
+    isLiked: c.user_liked ?? c.isLiked ?? false,
+    replies: (c.replies || []).map(mapComment)
+  });
+
   const loadComments = async () => {
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2000);
-      
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/v1/documents/${id}/comments`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        const data = await response.json();
-        setComments(data.comments || []);
-        return;
-      }
+      const data = await apiService.comments.getByDocument(id);
+      const apiComments = data.comments || [];
+      await resolveUserNames(apiComments);
+      const mapped = apiComments.map(mapComment);
+      setComments(mapped);
+      setCommentsCount(mapped.reduce((acc, c) => acc + 1 + (c.replies?.length || 0), 0));
+      return;
     } catch (err) {
-      if (err.name !== 'AbortError') {
-        console.error('Error cargando comentarios:', err.message);
-      }
+      console.error('Error cargando comentarios:', err.message);
     }
 
-    // Comentarios demo
-    const mockComments = [
-      {
-        id: 1,
-        autor: 'Dr. María Elena García',
-        avatar: null,
-        contenido: 'Excelente documento para entender las prácticas comerciales medievales. La sección sobre los gremios textiles es particularmente reveladora.',
-        fecha: new Date(Date.now() - 86400000 * 2).toISOString(),
-        likes: 8,
-        replies: [
-          {
-            id: 11,
-            autor: 'Prof. Carlos Mendoza',
-            avatar: null,
-            contenido: 'Estoy de acuerdo, María. También me llamó la atención el sistema de regulación de precios descrito en la página 15.',
-            fecha: new Date(Date.now() - 86400000 * 1).toISOString(),
-            likes: 3
-          }
-        ]
-      },
-      {
-        id: 2,
-        autor: 'Ana Rodríguez López',
-        avatar: null,
-        contenido: 'Sería interesante hacer un análisis comparativo con documentos similares del mismo período en otras regiones de España.',
-        fecha: new Date(Date.now() - 86400000 * 5).toISOString(),
-        likes: 12,
-        replies: []
-      },
-      {
-        id: 3,
-        autor: 'Dr. Fernando Castillo',
-        avatar: null,
-        contenido: 'La calidad de la digitalización es impresionante. Se pueden leer incluso las anotaciones marginales más pequeñas. ¡Felicitaciones al equipo de restauración!',
-        fecha: new Date(Date.now() - 86400000 * 7).toISOString(),
-        likes: 15,
-        replies: [
-          {
-            id: 31,
-            autor: 'Técnico Digital',
-            avatar: null,
-            contenido: 'Gracias, Dr. Castillo. Utilizamos tecnología de escaneo de alta resolución y técnicas de mejoramiento de imagen para preservar cada detalle.',
-            fecha: new Date(Date.now() - 86400000 * 6).toISOString(),
-            likes: 6
-          }
-        ]
-      }
-    ];
-
-    setComments(mockComments);
-    setCommentsCount(mockComments.length + mockComments.reduce((acc, comment) => acc + (comment.replies?.length || 0), 0));
+    setComments([]);
+    setCommentsCount(0);
   };
 
   const incrementViewCount = async () => {
     try {
-      const token = localStorage.getItem('token');
-      
-      // Intentar primero con API Gateway
-      let response = await fetch(`http://localhost:5000/api/v1/documents/${id}/view`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({})  // Enviar objeto vacío para que el API Gateway no falle
-      });
-
-      // Si el API Gateway falla, intentar conexión directa al servicio
-      if (!response.ok) {
-        console.warn('API Gateway falló para vista, intentando conexión directa');
-        response = await fetch(`http://localhost:5002/api/v1/documents/${id}/view`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({})  // Enviar objeto vacío
-        });
-      }
+      await apiService.post(`/documents/${id}/view`, {});
     } catch (err) {
       console.log('Vista registrada en modo demo');
     }
@@ -294,22 +151,15 @@ const loadDocumentInteractions = async () => {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/v1/documents/${id}/like`, {
-        method: isLiked ? 'DELETE' : 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        }
-      });
-
-      if (response.ok) {
-        setIsLiked(!isLiked);
-        setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
-        success(isLiked ? 'Me gusta eliminado' : 'Me gusta agregado');
+      if (isLiked) {
+        await apiService.delete(`/documents/${id}/like`);
+      } else {
+        await apiService.post(`/documents/${id}/like`);
       }
+      setIsLiked(!isLiked);
+      setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
+      success(isLiked ? 'Me gusta eliminado' : 'Me gusta agregado');
     } catch (err) {
-      // Modo demo
       setIsLiked(!isLiked);
       setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
       success(isLiked ? 'Me gusta eliminado (demo)' : 'Me gusta agregado (demo)');
@@ -323,22 +173,15 @@ const loadDocumentInteractions = async () => {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/v1/documents/${id}/favorite`, {
-        method: isFavorited ? 'DELETE' : 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        }
-      });
-
-      if (response.ok) {
-        setIsFavorited(!isFavorited);
-        setFavoritesCount(prev => isFavorited ? prev - 1 : prev + 1);
-        success(isFavorited ? 'Eliminado de favoritos' : 'Agregado a favoritos');
+      if (isFavorited) {
+        await apiService.delete(`/documents/${id}/favorite`);
+      } else {
+        await apiService.post(`/documents/${id}/favorite`);
       }
+      setIsFavorited(!isFavorited);
+      setFavoritesCount(prev => isFavorited ? prev - 1 : prev + 1);
+      success(isFavorited ? 'Eliminado de favoritos' : 'Agregado a favoritos');
     } catch (err) {
-      // Modo demo
       setIsFavorited(!isFavorited);
       setFavoritesCount(prev => isFavorited ? prev - 1 : prev + 1);
       success(isFavorited ? 'Eliminado de favoritos (demo)' : 'Agregado a favoritos (demo)');
@@ -352,24 +195,11 @@ const loadDocumentInteractions = async () => {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/v1/documents/${id}/rating`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ rating: newRating })
-      });
-
-      if (response.ok) {
-        setUserRating(newRating);
-        success('Calificación guardada');
-        // Recalcular rating promedio (simplificado para demo)
-        setRating(prev => (prev + newRating) / 2);
-      }
+      await apiService.post(`/documents/${id}/rating`, { rating: newRating });
+      setUserRating(newRating);
+      success('Calificación guardada');
+      setRating(prev => (prev + newRating) / 2);
     } catch (err) {
-      // Modo demo
       setUserRating(newRating);
       success('Calificación guardada (demo)');
       setRating(prev => (prev + newRating) / 2);
@@ -386,65 +216,109 @@ const loadDocumentInteractions = async () => {
     setIsSubmittingComment(true);
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/v1/documents/${id}/comments`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          contenido: newComment,
-          replyTo: replyTo
-        })
+      const data = await apiService.comments.addToDocument(id, {
+        contenido: newComment,
+        parent_id: replyTo
       });
 
-      if (response.ok) {
-        const data = await response.json();
+      if (data && data.comment) {
+        const newC = {
+          ...data.comment,
+          fecha: data.comment.created_at,
+          autor: user?.nombre || `Usuario #${data.comment.user_id}`,
+          likes: data.comment.likes_count ?? 0,
+          isLiked: data.comment.user_liked ?? false,
+          replies: []
+        };
+
         if (replyTo) {
-          // Agregar respuesta
-          setComments(prev => prev.map(comment => 
-            comment.id === replyTo 
-              ? { ...comment, replies: [...(comment.replies || []), data.comment] }
+          setComments(prev => prev.map(comment =>
+            comment.id === replyTo
+              ? { ...comment, replies: [...(comment.replies || []), newC] }
               : comment
           ));
         } else {
-          // Agregar comentario nuevo
-          setComments(prev => [data.comment, ...prev]);
+          setComments(prev => [newC, ...prev]);
         }
+        setCommentsCount(prev => prev + 1);
         setNewComment('');
         setReplyTo(null);
         success('Comentario agregado');
+      } else {
+        error('Error al publicar comentario');
       }
     } catch (err) {
-      // Modo demo
-      const newCommentObj = {
-        id: Date.now(),
-        autor: user?.nombre || user?.email || 'Usuario',
-        avatar: null,
-        contenido: newComment,
-        fecha: new Date().toISOString(),
-        likes: 0,
-        replies: []
-      };
-
-      if (replyTo) {
-        setComments(prev => prev.map(comment => 
-          comment.id === replyTo 
-            ? { ...comment, replies: [...(comment.replies || []), newCommentObj] }
-            : comment
-        ));
-      } else {
-        setComments(prev => [newCommentObj, ...prev]);
-      }
-      
-      setNewComment('');
-      setReplyTo(null);
-      success('Comentario agregado (demo)');
-      setCommentsCount(prev => prev + 1);
+      error('Error de conexión al publicar comentario');
     }
 
     setIsSubmittingComment(false);
+  };
+
+  const handleToggleCommentLike = async (commentId) => {
+    if (!isAuthenticated) {
+      error('Debes iniciar sesión para dar me gusta');
+      return;
+    }
+    try {
+      const data = await apiService.comments.like(commentId);
+      setComments(prev => prev.map(c => updateLikes(c, commentId, data.liked, data.likes_count)));
+    } catch (err) {
+      console.error('Error dando like:', err);
+    }
+  };
+
+  const updateLikes = (comment, targetId, liked, likesCount) => {
+    if (comment.id === targetId) {
+      return { ...comment, isLiked: liked, likes: likesCount, likes_count: likesCount };
+    }
+    if (comment.replies) {
+      return { ...comment, replies: comment.replies.map(r => updateLikes(r, targetId, liked, likesCount)) };
+    }
+    return comment;
+  };
+
+  const handleEditComment = async (commentId) => {
+    if (!editingContent.trim()) return;
+    try {
+      const data = await apiService.comments.update(commentId, { contenido: editingContent });
+      if (data && data.comment) {
+        setComments(prev => prev.map(c => updateContent(c, commentId, data.comment.contenido)));
+        setEditingCommentId(null);
+        setEditingContent('');
+        success('Comentario actualizado');
+      } else {
+        error('Error al editar comentario');
+      }
+    } catch (err) {
+      error('Error de conexión al editar comentario');
+    }
+  };
+
+  const updateContent = (comment, targetId, newContent) => {
+    if (comment.id === targetId) return { ...comment, contenido: newContent, is_edited: true };
+    if (comment.replies) return { ...comment, replies: comment.replies.map(r => updateContent(r, targetId, newContent)) };
+    return comment;
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    if (!window.confirm('¿Estás seguro de eliminar este comentario?')) return;
+    try {
+      await apiService.comments.delete(commentId);
+      setComments(prev => prev.filter(c => removeComment(c, commentId) !== null));
+      setCommentsCount(prev => Math.max(0, prev - 1));
+      success('Comentario eliminado');
+    } catch (err) {
+      error('Error de conexión al eliminar comentario');
+    }
+  };
+
+  const removeComment = (comment, targetId) => {
+    if (comment.id === targetId) return null;
+    if (comment.replies) {
+      const filtered = comment.replies.map(r => removeComment(r, targetId)).filter(Boolean);
+      return { ...comment, replies: filtered };
+    }
+    return comment;
   };
 
   const handleShare = (platform) => {
@@ -478,22 +352,9 @@ const loadDocumentInteractions = async () => {
 
   const handleDelete = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/v1/documents/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        success('Documento eliminado exitosamente');
-        navigate('/docs');
-      } else {
-        // En modo demo
-        success('Documento eliminado (modo demo)');
-        navigate('/docs');
-      }
+      await apiService.documents.delete(id);
+      success('Documento eliminado exitosamente');
+      navigate('/docs');
     } catch (err) {
       console.warn('Error eliminando documento:', err.message);
       success('Documento eliminado (modo demo)');
@@ -503,8 +364,9 @@ const loadDocumentInteractions = async () => {
 
   const downloadFile = async () => {
   try {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1';
     const token = localStorage.getItem('token');
-    const response = await fetch(`http://localhost:5002/api/v1/documents/${id}/download`, {
+    const response = await fetch(`${baseUrl}/documents/${id}/download`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -516,7 +378,7 @@ const loadDocumentInteractions = async () => {
       const url = window.URL.createObjectURL(blob);
       const a = window.document.createElement('a');
       a.href = url;
-      a.download = document.archivo_original || 'documento';
+      a.download = document?.archivo_original || 'documento';
       window.document.body.appendChild(a);
       a.click();
       a.remove();
@@ -900,7 +762,7 @@ const loadDocumentInteractions = async () => {
       <div className="comments-section">
         <div className="document-detail-container">
           <h3 className="comments-title">
-            Comentarios ({commentsCount})
+            Comentarios ({comments.reduce((acc, c) => acc + 1 + (c.replies?.length || 0), 0)})
           </h3>
 
           {/* Formulario para nuevo comentario */}
@@ -945,23 +807,23 @@ const loadDocumentInteractions = async () => {
                   <div className="comment-header">
                     <div className="comment-author">
                       <div className="author-avatar">
-                        {comment.user?.name?.charAt(0)?.toUpperCase() || comment.autor?.charAt(0)?.toUpperCase() || 'U'}
+                        {(comment.autor || `Usuario #${comment.user_id}`).charAt(0).toUpperCase()}
                       </div>
                       <div className="author-info">
-                        <span className="author-name">{comment.user?.name || comment.autor}</span>
-                        <span className="comment-date">{formatDate(comment.createdAt || comment.fecha)}</span>
+                        <span className="author-name">{comment.autor || `Usuario #${comment.user_id}`}</span>
+                        <span className="comment-date">{formatDate(comment.fecha)}</span>
                       </div>
                     </div>
                     <div className="comment-actions">
                       <button 
                         className={`comment-like ${comment.isLiked ? 'liked' : ''}`}
-                        onClick={() => {/* TODO: Implementar like de comentario */}}
+                        onClick={() => handleToggleCommentLike(comment.id)}
                         title="Me gusta"
                       >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                           <path d="M12,21.35L10.55,20.03C5.4,15.36 2,12.27 2,8.5C2,5.41 4.42,3 7.5,3C9.24,3 10.91,3.81 12,5.08C13.09,3.81 14.76,3 16.5,3C19.58,3 22,5.41 22,8.5C22,12.27 18.6,15.36 13.45,20.03L12,21.35Z"/>
                         </svg>
-                        <span>{comment.likesCount || comment.likes || 0}</span>
+                        <span>{comment.likes || 0}</span>
                       </button>
                       <button 
                         className="comment-reply"
@@ -970,10 +832,54 @@ const loadDocumentInteractions = async () => {
                       >
                         Responder
                       </button>
+                      {user?.id === comment.user_id && (
+                        <>
+                          <button
+                            className="comment-edit"
+                            onClick={() => { setEditingCommentId(comment.id); setEditingContent(comment.contenido); }}
+                            title="Editar"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z"/>
+                            </svg>
+                          </button>
+                          <button
+                            className="comment-delete"
+                            onClick={() => handleDeleteComment(comment.id)}
+                            title="Eliminar"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/>
+                            </svg>
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                   <div className="comment-content">
-                    <p>{comment.content || comment.contenido}</p>
+                    {editingCommentId === comment.id ? (
+                      <div className="comment-edit-form">
+                        <textarea
+                          value={editingContent}
+                          onChange={(e) => setEditingContent(e.target.value)}
+                          rows="3"
+                          className="comment-textarea"
+                        />
+                        <div className="comment-form-actions">
+                          <button onClick={() => { setEditingCommentId(null); setEditingContent(''); }} className="btn btn-small btn-outline" style={{ marginRight: 8 }}>
+                            Cancelar
+                          </button>
+                          <button onClick={() => handleEditComment(comment.id)} className="btn btn-primary btn-small" disabled={!editingContent.trim()}>
+                            Guardar
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p>
+                        {comment.contenido}
+                        {comment.is_edited && <span className="edited-badge" style={{ fontSize: 11, color: '#888', marginLeft: 6 }}>(editado)</span>}
+                      </p>
+                    )}
                   </div>
                   
                   {/* Respuestas al comentario */}
@@ -984,14 +890,17 @@ const loadDocumentInteractions = async () => {
                           <div className="reply-header">
                             <div className="reply-author">
                               <div className="author-avatar small">
-                                {reply.user?.name?.charAt(0)?.toUpperCase() || reply.autor?.charAt(0)?.toUpperCase() || 'U'}
+                                {(reply.autor || `Usuario #${reply.user_id}`).charAt(0).toUpperCase()}
                               </div>
-                              <span className="author-name">{reply.user?.name || reply.autor}</span>
-                              <span className="reply-date">{formatDate(reply.createdAt || reply.fecha)}</span>
+                              <span className="author-name">{reply.autor || `Usuario #${reply.user_id}`}</span>
+                              <span className="reply-date">{formatDate(reply.fecha || reply.created_at)}</span>
                             </div>
                           </div>
                           <div className="reply-content">
-                            <p>{reply.content || reply.contenido}</p>
+                            <p>
+                              {reply.contenido}
+                              {reply.is_edited && <span className="edited-badge" style={{ fontSize: 11, color: '#888', marginLeft: 6 }}>(editado)</span>}
+                            </p>
                           </div>
                         </div>
                       ))}

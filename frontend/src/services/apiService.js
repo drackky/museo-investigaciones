@@ -152,6 +152,17 @@ export const apiService = {
     getProfile: () => apiService.get('/users/profile'),
     updateProfile: (data) => apiService.put('/users/profile', data),
     changePassword: (data) => apiService.put('/users/password', data)
+  },
+
+  // Comentarios
+  comments: {
+    getByDocument: (documentId, params = {}) => apiService.get(`/documents/${documentId}/comments`, params),
+    getByCollection: (collectionId, params = {}) => apiService.get(`/collections/${collectionId}/comments`, params),
+    addToDocument: (documentId, data) => apiService.post(`/documents/${documentId}/comments`, data),
+    addToCollection: (collectionId, data) => apiService.post(`/collections/${collectionId}/comments`, data),
+    update: (commentId, data) => apiService.put(`/comments/${commentId}`, data),
+    delete: (commentId) => apiService.delete(`/comments/${commentId}`),
+    like: (commentId) => apiService.post(`/comments/${commentId}/like`)
   }
 };
 

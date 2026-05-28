@@ -690,6 +690,31 @@ def update_investigation(investigation_id):
         logger.error(f'Error actualizando investigación: {str(e)}')
         return jsonify({'error': 'Error interno del servidor'}), 500
 
+@app.route('/api/v1/investigations/<int:investigation_id>', methods=['DELETE'])
+def delete_investigation(investigation_id):
+    """Eliminar investigación"""
+    try:
+        current_user = get_current_user()
+        if not current_user:
+            return jsonify({'error': 'Autenticación requerida'}), 401
+        
+        investigation = Investigation.query.get_or_404(investigation_id)
+        
+        if investigation.investigador_principal_id != current_user['user_id']:
+            return jsonify({'error': 'Solo el investigador principal puede eliminar la investigación'}), 403
+        
+        db.session.delete(investigation)
+        db.session.commit()
+        
+        logger.info(f'Investigación eliminada: {investigation_id} por usuario {current_user["user_id"]}')
+        
+        return jsonify({'message': 'Investigación eliminada exitosamente'})
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f'Error eliminando investigación: {str(e)}')
+        return jsonify({'error': 'Error interno del servidor'}), 500
+
 # =============================================================================
 # RUTAS DE TICKETS
 # =============================================================================

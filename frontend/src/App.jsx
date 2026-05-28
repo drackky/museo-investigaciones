@@ -16,6 +16,7 @@ import CollectionDetailPage from './pages/CollectionDetailPage';
 import NewCollectionPage from './pages/NewCollectionPage';
 import ProfilePage from './pages/ProfilePage';
 import ResearchPage from './pages/ResearchPage';
+import ResearchDetailPage from './pages/ResearchDetailPage';
 import NewResearchPage from './pages/NewResearchPage';
 
 // Import CSS perfectamente centrado
@@ -40,6 +41,7 @@ function App() {
               <Route path="/profile" element={<PrivateRoute><Layout showSidebar={false}><ProfilePage /></Layout></PrivateRoute>} />
               <Route path="/research" element={<ResearcherGuard><Layout showSidebar={false}><ResearchPage /></Layout></ResearcherGuard>} />
               <Route path="/research/new" element={<ResearcherGuard><Layout showSidebar={false}><NewResearchPage /></Layout></ResearcherGuard>} />
+              <Route path="/research/:id" element={<ResearcherGuard><Layout showSidebar={false}><ResearchDetailPage /></Layout></ResearcherGuard>} />
               
               {/* Ruta 404 */}
               <Route path="*" element={

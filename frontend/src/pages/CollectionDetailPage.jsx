@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContextSimple';
 import { useNotifications } from '../components/NotificationProvider';
 import { formatDate, formatFileSize } from '../utils';
+import { apiService } from '../services/apiService';
 
 const CollectionDetailPage = () => {
   const { id } = useParams();
@@ -50,46 +51,24 @@ const CollectionDetailPage = () => {
 
   const loadCollectionInteractions = async () => {
     try {
-      const token = localStorage.getItem('token');
-      // Try API Gateway first
-      let response = await fetch(`http://localhost:5000/api/v1/collections/${id}/interactions`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        }
-      });
-
-      // If API Gateway fails, try direct service connection
-      if (!response.ok) {
-        response = await fetch(`http://localhost:5003/api/v1/collections/${id}/interactions`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          }
-        });
-      }
-
-      if (response.ok) {
-        const data = await response.json();
-        setIsLiked(data.isLiked);
-        setIsFavorited(data.isFavorited);
-        setIsSubscribed(data.isSubscribed);
-        setLikesCount(data.likesCount);
-        setFavoritesCount(data.favoritesCount);
-        setSubscribersCount(data.subscribersCount);
-        setViewsCount(data.viewsCount);
-        setRating(data.averageRating);
-        setUserRating(data.userRating);
-        setCommentsCount(data.commentsCount);
-      }
+      const data = await apiService.get(`/collections/${id}/interactions`);
+      setIsLiked(data.isLiked);
+      setIsFavorited(data.isFavorited);
+      setIsSubscribed(data.isSubscribed);
+      setLikesCount(data.likesCount);
+      setFavoritesCount(data.favoritesCount);
+      setSubscribersCount(data.subscribersCount);
+      setViewsCount(data.viewsCount);
+      setRating(data.averageRating);
+      setUserRating(data.userRating);
+      setCommentsCount(data.commentsCount);
     } catch (err) {
-      // Generar datos demo para interacciones
-      setLikesCount(Math.floor(Math.random() * 80) + 20); // 20-100
-      setFavoritesCount(Math.floor(Math.random() * 40) + 10); // 10-50
-      setSubscribersCount(Math.floor(Math.random() * 150) + 50); // 50-200
-      setViewsCount(Math.floor(Math.random() * 800) + 200); // 200-1000
-      setRating(Math.random() * 2 + 3.5); // 3.5-5.5
-      setCommentsCount(Math.floor(Math.random() * 25) + 5); // 5-30
+      setLikesCount(Math.floor(Math.random() * 80) + 20);
+      setFavoritesCount(Math.floor(Math.random() * 40) + 10);
+      setSubscribersCount(Math.floor(Math.random() * 150) + 50);
+      setViewsCount(Math.floor(Math.random() * 800) + 200);
+      setRating(Math.random() * 2 + 3.5);
+      setCommentsCount(Math.floor(Math.random() * 25) + 5);
       setIsLiked(Math.random() > 0.7);
       setIsFavorited(Math.random() > 0.8);
       setIsSubscribed(Math.random() > 0.6);
@@ -99,32 +78,9 @@ const CollectionDetailPage = () => {
 
   const loadComments = async () => {
     try {
-      const token = localStorage.getItem('token');
-      
-      // Intentar primero con API Gateway
-      let response = await fetch(`http://localhost:5000/api/v1/collections/${id}/comments`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        }
-      });
-
-      // Si el API Gateway falla, intentar conexión directa al servicio
-      if (!response.ok) {
-        console.warn('API Gateway falló para comentarios, intentando conexión directa');
-        response = await fetch(`http://localhost:5004/api/v1/collections/${id}/comments`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          }
-        });
-      }
-
-      if (response.ok) {
-        const data = await response.json();
-        setComments(data.comments || []);
-        return;
-      }
+      const data = await apiService.comments.getByCollection(id);
+      setComments(data.comments || []);
+      return;
     } catch (err) {
       // Generar comentarios demo
       const demoComments = [
@@ -176,30 +132,8 @@ const CollectionDetailPage = () => {
 
   const incrementViews = async () => {
     try {
-      const token = localStorage.getItem('token');
-      
-      // Intentar primero con API Gateway
-      let response = await fetch(`http://localhost:5000/api/v1/collections/${id}/view`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        }
-      });
-
-      // Si el API Gateway falla, intentar conexión directa al servicio
-      if (!response.ok) {
-        console.warn('API Gateway falló para vista, intentando conexión directa');
-        response = await fetch(`http://localhost:5003/api/v1/collections/${id}/view`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          }
-        });
-      }
+      await apiService.post(`/collections/${id}/view`);
     } catch (err) {
-      // En modo demo, incrementar localmente
       setViewsCount(prev => prev + 1);
     }
   };
@@ -208,43 +142,16 @@ const CollectionDetailPage = () => {
     try {
       setIsLoading(true);
       
-      // Intentar cargar desde API
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2000);
+      const [collectionData, documentsData] = await Promise.all([
+        apiService.collections.getById(id),
+        apiService.get(`/collections/${id}/documents`)
+      ]);
       
-      const token = localStorage.getItem('token');
-      
-      // Cargar colección
-      const collectionResponse = await fetch(`http://localhost:5000/api/v1/collections/${id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        signal: controller.signal
-      });
-
-      // Cargar documentos de la colección
-      const documentsResponse = await fetch(`http://localhost:5000/api/v1/collections/${id}/documents`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
-
-      if (collectionResponse.ok && documentsResponse.ok) {
-        const collectionData = await collectionResponse.json();
-        const documentsData = await documentsResponse.json();
-        setCollection(collectionData.collection);
-        setDocuments(documentsData.documents || []);
-        return;
-      }
+      setCollection(collectionData.collection);
+      setDocuments(documentsData.documents || []);
+      return;
     } catch (err) {
-      if (err.name !== 'AbortError') {
-        console.error('Error cargando colección:', err.message);
-      }
+      console.error('Error cargando colección:', err.message);
     }
 
     // Usar datos demo
@@ -340,22 +247,11 @@ const CollectionDetailPage = () => {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/v1/collections/${id}/like`, {
-        method: isLiked ? 'DELETE' : 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        }
-      });
-
-      if (response.ok) {
-        setIsLiked(!isLiked);
-        setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
-        success(isLiked ? 'Me gusta eliminado' : 'Me gusta agregado');
-      }
+      await apiService.collections.toggleLike(id);
+      setIsLiked(!isLiked);
+      setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
+      success(isLiked ? 'Me gusta eliminado' : 'Me gusta agregado');
     } catch (err) {
-      // Modo demo
       setIsLiked(!isLiked);
       setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
       success(isLiked ? 'Me gusta eliminado (demo)' : 'Me gusta agregado (demo)');
@@ -369,22 +265,11 @@ const CollectionDetailPage = () => {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/v1/collections/${id}/favorite`, {
-        method: isFavorited ? 'DELETE' : 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        }
-      });
-
-      if (response.ok) {
-        setIsFavorited(!isFavorited);
-        setFavoritesCount(prev => isFavorited ? prev - 1 : prev + 1);
-        success(isFavorited ? 'Eliminado de favoritos' : 'Agregado a favoritos');
-      }
+      await apiService.collections.toggleFavorite(id);
+      setIsFavorited(!isFavorited);
+      setFavoritesCount(prev => isFavorited ? prev - 1 : prev + 1);
+      success(isFavorited ? 'Eliminado de favoritos' : 'Agregado a favoritos');
     } catch (err) {
-      // Modo demo
       setIsFavorited(!isFavorited);
       setFavoritesCount(prev => isFavorited ? prev - 1 : prev + 1);
       success(isFavorited ? 'Eliminado de favoritos (demo)' : 'Agregado a favoritos (demo)');
@@ -398,22 +283,11 @@ const CollectionDetailPage = () => {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/v1/collections/${id}/subscribe`, {
-        method: isSubscribed ? 'DELETE' : 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        }
-      });
-
-      if (response.ok) {
-        setIsSubscribed(!isSubscribed);
-        setSubscribersCount(prev => isSubscribed ? prev - 1 : prev + 1);
-        success(isSubscribed ? 'Suscripción cancelada' : 'Te has suscrito a las actualizaciones');
-      }
+      await apiService.collections.toggleSubscription(id);
+      setIsSubscribed(!isSubscribed);
+      setSubscribersCount(prev => isSubscribed ? prev - 1 : prev + 1);
+      success(isSubscribed ? 'Suscripción cancelada' : 'Te has suscrito a las actualizaciones');
     } catch (err) {
-      // Modo demo
       setIsSubscribed(!isSubscribed);
       setSubscribersCount(prev => isSubscribed ? prev - 1 : prev + 1);
       success(isSubscribed ? 'Suscripción cancelada (demo)' : 'Te has suscrito a las actualizaciones (demo)');
@@ -427,24 +301,11 @@ const CollectionDetailPage = () => {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/v1/collections/${id}/rating`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ rating: newRating })
-      });
-
-      if (response.ok) {
-        setUserRating(newRating);
-        success('Calificación guardada');
-        // Recalcular rating promedio (simplificado para demo)
-        setRating(prev => (prev + newRating) / 2);
-      }
+      await apiService.collections.rate(id, newRating);
+      setUserRating(newRating);
+      success('Calificación guardada');
+      setRating(prev => (prev + newRating) / 2);
     } catch (err) {
-      // Modo demo
       setUserRating(newRating);
       success('Calificación guardada (demo)');
       setRating(prev => (prev + newRating) / 2);
@@ -461,36 +322,22 @@ const CollectionDetailPage = () => {
     setIsSubmittingComment(true);
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/v1/collections/${id}/comments`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          contenido: newComment,
-          replyTo: replyTo
-        })
+      const data = await apiService.comments.addToCollection(id, { 
+        contenido: newComment,
+        replyTo: replyTo
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (replyTo) {
-          // Agregar respuesta
-          setComments(prev => prev.map(comment => 
-            comment.id === replyTo 
-              ? { ...comment, replies: [...(comment.replies || []), data.comment] }
-              : comment
-          ));
-        } else {
-          // Agregar comentario nuevo
-          setComments(prev => [data.comment, ...prev]);
-        }
-        setNewComment('');
-        setReplyTo(null);
-        success('Comentario agregado');
+      if (replyTo) {
+        setComments(prev => prev.map(comment => 
+          comment.id === replyTo 
+            ? { ...comment, replies: [...(comment.replies || []), data.comment] }
+            : comment
+        ));
+      } else {
+        setComments(prev => [data.comment, ...prev]);
       }
+      setNewComment('');
+      setReplyTo(null);
+      success('Comentario agregado');
     } catch (err) {
       // Modo demo
       const newCommentObj = {
@@ -553,22 +400,9 @@ const CollectionDetailPage = () => {
 
   const handleDelete = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/v1/collections/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        success('Colección eliminada exitosamente');
-        navigate('/cols');
-      } else {
-        // En modo demo
-        success('Colección eliminada (modo demo)');
-        navigate('/cols');
-      }
+      await apiService.collections.delete(id);
+      success('Colección eliminada exitosamente');
+      navigate('/cols');
     } catch (err) {
       console.warn('Error eliminando colección:', err.message);
       success('Colección eliminada (modo demo)');

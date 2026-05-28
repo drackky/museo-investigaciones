@@ -439,6 +439,92 @@ def logout():
         logger.error(f'Error en logout: {str(e)}')
         return jsonify({'error': 'Error interno del servidor'}), 500
 
+@app.route('/api/v1/auth/refresh', methods=['POST'])
+def refresh_token():
+    """Refrescar token JWT"""
+    try:
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return jsonify({'error': 'Token requerido'}), 401
+        
+        token = auth_header[7:]
+        payload = verify_token(token)
+        
+        if not payload:
+            return jsonify({'error': 'Token inválido o expirado'}), 401
+        
+        # Generar nuevo token
+        new_token = generate_token(payload['user_id'])
+        
+        return jsonify({
+            'message': 'Token refrescado exitosamente',
+            'token': new_token
+        })
+        
+    except Exception as e:
+        logger.error(f'Error refrescando token: {str(e)}')
+        return jsonify({'error': 'Error interno del servidor'}), 500
+
+@app.route('/api/v1/auth/password', methods=['PUT'])
+def change_password():
+    """Cambiar contraseña del usuario"""
+    try:
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return jsonify({'error': 'Token requerido'}), 401
+        
+        token = auth_header[7:]
+        payload = verify_token(token)
+        
+        if not payload:
+            return jsonify({'error': 'Token inválido'}), 401
+        
+        data = request.get_json()
+        
+        if not data.get('current_password') or not data.get('new_password'):
+            return jsonify({'error': 'Contraseña actual y nueva son requeridas'}), 400
+        
+        user = User.query.get(payload['user_id'])
+        if not user:
+            return jsonify({'error': 'Usuario no encontrado'}), 404
+        
+        if not bcrypt.check_password_hash(user.password_hash, data['current_password']):
+            return jsonify({'error': 'Contraseña actual incorrecta'}), 401
+        
+        new_password = data['new_password']
+        is_valid, message = validate_password(new_password)
+        if not is_valid:
+            return jsonify({'error': message}), 400
+        
+        user.password_hash = bcrypt.generate_password_hash(new_password).decode('utf-8')
+        user.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        logger.info(f'Contraseña cambiada para usuario {user.id}')
+        
+        return jsonify({'message': 'Contraseña actualizada exitosamente'})
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f'Error cambiando contraseña: {str(e)}')
+        return jsonify({'error': 'Error interno del servidor'}), 500
+
+@app.route('/api/v1/auth/users/<int:user_id>', methods=['GET'])
+def get_user_by_id(user_id):
+    """Obtener información de un usuario por ID"""
+    try:
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'error': 'Usuario no encontrado'}), 404
+        
+        return jsonify({
+            'user': user.to_dict()
+        })
+        
+    except Exception as e:
+        logger.error(f'Error obteniendo usuario {user_id}: {str(e)}')
+        return jsonify({'error': 'Error interno del servidor'}), 500
+
 @app.route('/api/v1/auth/profile', methods=['GET'])
 def get_profile():
     """Obtener perfil del usuario autenticado"""

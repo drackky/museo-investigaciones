@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContextSimple';
 import { useNotifications } from '../components/NotificationProvider';
+import { apiService } from '../services/apiService';
 
 const CollectionsPage = () => {
   const [collections, setCollections] = useState([]);
@@ -34,52 +35,17 @@ const CollectionsPage = () => {
     try {
       setIsLoading(true);
       
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-      
-      const token = localStorage.getItem('token');
-      const params = new URLSearchParams();
-      if (misColecciones && token) {
-        params.append('mis_colecciones', 'true');
+      const params = {};
+      if (misColecciones) {
+        params.mis_colecciones = 'true';
       }
       
-      // Intentar primero con API Gateway
-      let url = `http://localhost:5000/api/v1/collections${params.toString() ? '?' + params.toString() : ''}`;
-      let response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
-
-      // Si el API Gateway falla, intentar conexión directa al servicio
-      if (!response.ok) {
-        console.warn('API Gateway falló, intentando conexión directa al servicio de colecciones');
-        url = `http://localhost:5003/api/v1/collections${params.toString() ? '?' + params.toString() : ''}`;
-        response = await fetch(url, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          }
-        });
-      }
-
-      if (response.ok) {
-        const data = await response.json();
-        setCollections(data.collections || []);
-        setIsLoading(false);
-        return;
-      } else {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
+      const data = await apiService.collections.getAll(params);
+      setCollections(data.collections || []);
+      setIsLoading(false);
     } catch (err) {
       console.error('Error cargando colecciones:', err.message);
-      if (err.name !== 'AbortError') {
-        error('No se pudieron cargar las colecciones. Verifica la conexión al servidor.');
-      }
+      error('No se pudieron cargar las colecciones. Verifica la conexión al servidor.');
       setCollections([]);
       setIsLoading(false);
     }
@@ -97,25 +63,15 @@ const CollectionsPage = () => {
     const isCurrentlyLiked = likedCollections.has(collectionId);
     
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/v1/collections/${collectionId}/like`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        }
-      });
-
-      if (response.ok) {
-        const newLikedCollections = new Set(likedCollections);
-        if (isCurrentlyLiked) {
-          newLikedCollections.delete(collectionId);
-        } else {
-          newLikedCollections.add(collectionId);
-        }
-        setLikedCollections(newLikedCollections);
-        success(isCurrentlyLiked ? 'Me gusta eliminado' : 'Me gusta agregado');
+      await apiService.collections.toggleLike(collectionId);
+      const newLikedCollections = new Set(likedCollections);
+      if (isCurrentlyLiked) {
+        newLikedCollections.delete(collectionId);
+      } else {
+        newLikedCollections.add(collectionId);
       }
+      setLikedCollections(newLikedCollections);
+      success(isCurrentlyLiked ? 'Me gusta eliminado' : 'Me gusta agregado');
     } catch (err) {
       console.error('Error en like:', err);
       error('Error al procesar me gusta');
@@ -134,25 +90,15 @@ const CollectionsPage = () => {
     const isCurrentlyFavorited = favoritedCollections.has(collectionId);
     
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/v1/collections/${collectionId}/favorite`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        }
-      });
-
-      if (response.ok) {
-        const newFavoritedCollections = new Set(favoritedCollections);
-        if (isCurrentlyFavorited) {
-          newFavoritedCollections.delete(collectionId);
-        } else {
-          newFavoritedCollections.add(collectionId);
-        }
-        setFavoritedCollections(newFavoritedCollections);
-        success(isCurrentlyFavorited ? 'Eliminado de favoritos' : 'Añadido a favoritos');
+      await apiService.collections.toggleFavorite(collectionId);
+      const newFavoritedCollections = new Set(favoritedCollections);
+      if (isCurrentlyFavorited) {
+        newFavoritedCollections.delete(collectionId);
+      } else {
+        newFavoritedCollections.add(collectionId);
       }
+      setFavoritedCollections(newFavoritedCollections);
+      success(isCurrentlyFavorited ? 'Eliminado de favoritos' : 'Añadido a favoritos');
     } catch (err) {
       console.error('Error en favorito:', err);
       error('Error al procesar favorito');
@@ -296,8 +242,9 @@ const CollectionsPage = () => {
           <div className="collections-grid">
             {filteredCollections.map((collection) => {
               // Construir URL completa de la imagen usando la ruta del API
+              const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1';
               const imageUrl = collection.portada_path
-                ? `http://localhost:5003/api/v1/collections/${collection.id}/portada`
+                ? `${baseUrl}/collections/${collection.id}/portada`
                 : null;
               
               return (

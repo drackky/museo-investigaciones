@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContextSimple';
 import { useNotifications } from '../components/NotificationProvider';
+import apiService from '../services/apiService';
 
 const NewDocumentPage = () => {
   const [formData, setFormData] = useState({
@@ -44,18 +45,8 @@ const NewDocumentPage = () => {
 
   const loadAvailableTags = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/v1/tags', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setAvailableTags(data.tags || []);
-      }
+      const data = await apiService.get('/tags');
+      setAvailableTags(data.tags || []);
     } catch (err) {
       console.log('Error cargando tags desde el servidor');
       setAvailableTags([]);
@@ -198,25 +189,11 @@ const NewDocumentPage = () => {
         }
       });
 
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/v1/documents', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formDataToSend
-      });
+      const data = await apiService.documents.create(formDataToSend);
 
       setUploadProgress(100);
-
-      if (response.ok) {
-        const data = await response.json();
-        success('Documento subido exitosamente');
-        navigate(`/docs/${data.document.id}`);
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error al subir el documento');
-      }
+      success('Documento subido exitosamente');
+      navigate(`/docs/${data.document.id}`);
     } catch (err) {
       console.error('Error subiendo documento:', err);
       error(err.message || 'Error al subir el documento. Inténtalo de nuevo.');

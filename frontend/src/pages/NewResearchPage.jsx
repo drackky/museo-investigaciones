@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContextSimple';
 import { useNotifications } from '../components/NotificationProvider';
+import apiService from '../services/apiService';
 
 const NewResearchPage = () => {
   const [formData, setFormData] = useState({
@@ -122,25 +123,9 @@ const NewResearchPage = () => {
         }
       });
 
-      const token = localStorage.getItem('token');
-      // Intentar primero con API Gateway
-      let response = await fetch('http://localhost:5000/api/v1/investigations', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(submitData)
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        success('Investigación creada exitosamente');
-        navigate(`/research`);
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error al crear la investigación');
-      }
+      const data = await apiService.research.create(submitData);
+      success('Investigación creada exitosamente');
+      navigate(`/research`);
     } catch (err) {
       console.error('Error creando investigación:', err);
       error(err.message || 'Error al crear la investigación. Inténtalo de nuevo.');

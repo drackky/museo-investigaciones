@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContextSimple';
 import { useNotifications } from '../components/NotificationProvider';
+import apiService from '../services/apiService';
 
 const FileManager = ({ investigationId, ticketId = null, onFileUploaded }) => {
   const [files, setFiles] = useState([]);
@@ -18,49 +19,34 @@ const FileManager = ({ investigationId, ticketId = null, onFileUploaded }) => {
   const loadFiles = async () => {
     try {
       setIsLoading(true);
-      const token = localStorage.getItem('token');
-      const params = new URLSearchParams();
-      if (ticketId) params.append('ticket_id', ticketId);
-      if (filter && filter !== 'all') params.append('file_type', filter);
+      const params = {};
+      if (ticketId) params.ticket_id = ticketId;
+      if (filter && filter !== 'all') params.file_type = filter;
 
-      const response = await fetch(
-        `http://localhost:5000/api/v1/investigations/${investigationId}/files?${params}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        setFiles(data.files || []);
-      } else {
-        // Demo mode - mostrar archivos ficticios
-        setFiles([
-          {
-            id: 1,
-            original_name: 'informe_preliminar.pdf',
-            file_type: 'document',
-            file_size: 2048000,
-            uploaded_by: 1,
-            created_at: new Date().toISOString(),
-            description: 'Informe preliminar de la investigación'
-          },
-          {
-            id: 2,
-            original_name: 'muestra_ceramica.jpg',
-            file_type: 'image',
-            file_size: 1536000,
-            uploaded_by: 1,
-            created_at: new Date(Date.now() - 86400000).toISOString(),
-            description: 'Fotografía de muestra cerámica'
-          }
-        ]);
-      }
+      const data = await apiService.get(`/investigations/${investigationId}/files`, params);
+      setFiles(data.files || []);
     } catch (err) {
       console.error('Error cargando archivos:', err);
-      setFiles([]);
+      setFiles([
+        {
+          id: 1,
+          original_name: 'informe_preliminar.pdf',
+          file_type: 'document',
+          file_size: 2048000,
+          uploaded_by: 1,
+          created_at: new Date().toISOString(),
+          description: 'Informe preliminar de la investigación'
+        },
+        {
+          id: 2,
+          original_name: 'muestra_ceramica.jpg',
+          file_type: 'image',
+          file_size: 1536000,
+          uploaded_by: 1,
+          created_at: new Date(Date.now() - 86400000).toISOString(),
+          description: 'Fotografía de muestra cerámica'
+        }
+      ]);
     } finally {
       setIsLoading(false);
     }
@@ -78,39 +64,23 @@ const FileManager = ({ investigationId, ticketId = null, onFileUploaded }) => {
       if (ticketId) formData.append('ticket_id', ticketId);
       formData.append('description', `Archivo subido: ${file.name}`);
 
-      const token = localStorage.getItem('token');
-      const response = await fetch(
-        `http://localhost:5000/api/v1/investigations/${investigationId}/files`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          },
-          body: formData
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        setFiles(prev => [data.file, ...prev]);
-        success('Archivo subido exitosamente');
-        if (onFileUploaded) onFileUploaded(data.file);
-      } else {
-        // Demo mode
-        const newFile = {
-          id: Date.now(),
-          original_name: file.name,
-          file_type: getFileType(file.type),
-          file_size: file.size,
-          uploaded_by: 1,
-          created_at: new Date().toISOString(),
-          description: `Archivo subido: ${file.name}`
-        };
-        setFiles(prev => [newFile, ...prev]);
-        success('Archivo subido (modo demo)');
-      }
+      const data = await apiService.post(`/investigations/${investigationId}/files`, formData);
+      setFiles(prev => [data.file, ...prev]);
+      success('Archivo subido exitosamente');
+      if (onFileUploaded) onFileUploaded(data.file);
     } catch (err) {
-      error('Error al subir el archivo');
+      // Demo mode
+      const newFile = {
+        id: Date.now(),
+        original_name: file.name,
+        file_type: getFileType(file.type),
+        file_size: file.size,
+        uploaded_by: 1,
+        created_at: new Date().toISOString(),
+        description: `Archivo subido: ${file.name}`
+      };
+      setFiles(prev => [newFile, ...prev]);
+      success('Archivo subido (modo demo)');
     } finally {
       setUploadingFile(null);
     }
@@ -122,8 +92,9 @@ const FileManager = ({ investigationId, ticketId = null, onFileUploaded }) => {
   const handleDownload = async (file) => {
     try {
       const token = localStorage.getItem('token');
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1';
       const response = await fetch(
-        `http://localhost:5000/api/v1/investigations/${investigationId}/files/${file.id}/download`,
+        `${API_BASE_URL}/investigations/${investigationId}/files/${file.id}/download`,
         {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -155,21 +126,9 @@ const FileManager = ({ investigationId, ticketId = null, onFileUploaded }) => {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(
-        `http://localhost:5000/api/v1/investigations/${investigationId}/files/${file.id}`,
-        {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
-      );
-
-      if (response.ok || !response.ok) { // Funciona en modo demo también
-        setFiles(prev => prev.filter(f => f.id !== file.id));
-        success('Archivo eliminado');
-      }
+      await apiService.delete(`/investigations/${investigationId}/files/${file.id}`);
+      setFiles(prev => prev.filter(f => f.id !== file.id));
+      success('Archivo eliminado');
     } catch (err) {
       setFiles(prev => prev.filter(f => f.id !== file.id));
       success('Archivo eliminado (modo demo)');

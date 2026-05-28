@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContextSimple';
 import { useNotifications } from '../components/NotificationProvider';
 import { LoadingInline, SkeletonList } from '../components/Loading';
+import { apiService } from '../services/apiService';
 
 import { formatDate, formatFileSize, debounce } from '../utils';
 
@@ -36,48 +37,25 @@ const DocumentsPage = () => {
     setIsLoading(true);
     
     try {
-      const token = localStorage.getItem('token');
-      const params = new URLSearchParams();
+      const params = {};
       if (misDocumentos) {
-        // Para documentos propios, obtener el user_id del token
+        const token = localStorage.getItem('token');
         if (token) {
-          const payload = JSON.parse(atob(token.split('.')[1]));
-          params.append('autor_id', payload.user_id);
-          params.append('publico_solo', 'false'); // Incluir documentos privados del usuario
+          try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            params.autor_id = payload.user_id;
+            params.publico_solo = 'false';
+          } catch {
+            // Token malformed, load public
+            params.publico_solo = 'true';
+          }
         }
       } else {
-        params.append('publico_solo', 'true'); // Solo documentos públicos
+        params.publico_solo = 'true';
       }
       
-      // Intentar primero con API Gateway
-      let url = `http://localhost:5000/api/v1/documents${params.toString() ? '?' + params.toString() : ''}`;
-      let response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        }
-      });
-
-      // Si el API Gateway falla, intentar conexión directa al servicio
-      if (!response.ok) {
-        console.warn('API Gateway falló, intentando conexión directa al servicio de documentos');
-        url = `http://localhost:5002/api/v1/documents${params.toString() ? '?' + params.toString() : ''}`;
-        response = await fetch(url, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          }
-        });
-      }
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Documentos recibidos del backend:', data.documents?.length || 0);
-        setDocuments(data.documents || []);
-      } else {
-        console.error('Error en la respuesta:', response.status);
-        setDocuments([]);
-      }
+      const data = await apiService.documents.getAll(params);
+      setDocuments(data.documents || []);
     } catch (err) {
       console.error('Error cargando documentos:', err);
       setDocuments([]);
@@ -146,22 +124,11 @@ const DocumentsPage = () => {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/v1/documents/${documentId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        success('Documento eliminado exitosamente');
-        loadDocuments(showOnlyMine); // Recargar la lista
-      } else {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
+      await apiService.documents.delete(documentId);
+      success('Documento eliminado exitosamente');
+      loadDocuments(showOnlyMine);
     } catch (err) {
-      console.error('Error eliminando documento:', err.message);
+      console.error('Error eliminando documento:', err);
       error('Error al eliminar el documento. Verifica la conexión al servidor.');
     }
   };

@@ -17,16 +17,36 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    // Verificar si hay token en localStorage
-    const token = localStorage.getItem('token') || localStorage.getItem('auth_token');
-    const userData = localStorage.getItem('user_data');
+    const verifyAuth = async () => {
+      const token = localStorage.getItem('token') || localStorage.getItem('auth_token');
+      
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
+      
+      try {
+        const data = await apiService.auth.me();
+        if (data && data.user) {
+          setUser(data.user);
+          localStorage.setItem('user_data', JSON.stringify(data.user));
+          setIsAuthenticated(true);
+        } else {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user_data');
+        }
+      } catch {
+        localStorage.removeItem('token');
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_data');
+        setUser(null);
+        setIsAuthenticated(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
     
-    if (token && userData) {
-      setUser(JSON.parse(userData));
-      setIsAuthenticated(true);
-    }
-    
-    setIsLoading(false);
+    verifyAuth();
   }, []);
 
   const login = async (credentials) => {
@@ -70,8 +90,6 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Error en registro:', error);
       throw new Error(error.response?.data?.error || error.message || 'Error de conexión al servidor. Verifica que los servicios estén funcionando.');
-      
-      localStorage.setItem('token', mockToken);
     } finally {
       setIsLoading(false);
     }
@@ -85,7 +103,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const isResearcher = () => {
-    return user?.tipo === 'investigador';
+    return user?.tipo === 'investigador' || user?.rol === 'investigador';
   };
 
   const isGuest = () => {

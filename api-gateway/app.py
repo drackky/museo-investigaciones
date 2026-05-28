@@ -216,6 +216,19 @@ def logout():
     """Logout de usuarios"""
     return proxy_request('auth', '/api/v1/auth/logout', 'POST')
 
+@app.route('/api/v1/auth/me', methods=['GET'])
+@auth_required
+def auth_me():
+    """Obtener perfil del usuario (alias para frontend)"""
+    return proxy_request('auth', '/api/v1/auth/profile', 'GET')
+
+@app.route('/api/v1/auth/refresh', methods=['POST'])
+@auth_required
+def auth_refresh():
+    """Refrescar token"""
+    data = request.get_json()
+    return proxy_request('auth', '/api/v1/auth/refresh', 'POST', data)
+
 @app.route('/api/v1/auth/profile', methods=['GET'])
 @auth_required
 def get_profile():
@@ -376,10 +389,18 @@ def share_collection(collection_id):
     data = request.get_json()
     return proxy_request('collections', f'/api/v1/collections/{collection_id}/share', 'POST', data)
 
-@app.route('/api/v1/collections/<int:collection_id>/view', methods=['POST'])
-def increment_collection_views(collection_id):
-    """Incrementar vistas de colección"""
-    return proxy_request('collections', f'/api/v1/collections/{collection_id}/view', 'POST')
+@app.route('/api/v1/collections/<int:collection_id>', methods=['PUT'])
+@auth_required
+def update_collection(collection_id):
+    """Actualizar colección"""
+    data = request.get_json()
+    return proxy_request('collections', f'/api/v1/collections/{collection_id}', 'PUT', data)
+
+@app.route('/api/v1/collections/<int:collection_id>', methods=['DELETE'])
+@auth_required
+def delete_collection(collection_id):
+    """Eliminar colección"""
+    return proxy_request('collections', f'/api/v1/collections/{collection_id}', 'DELETE')
 
 @app.route('/api/v1/collections/<int:collection_id>/comments', methods=['GET'])
 def get_collection_comments(collection_id):
@@ -439,8 +460,114 @@ def toggle_comment_like(comment_id):
     """Dar/quitar like a comentario"""
     return proxy_request('comments', f'/api/v1/comments/{comment_id}/like', 'POST')
 
+@app.route('/api/v1/comments/<int:comment_id>', methods=['PUT'])
+@auth_required
+def update_comment(comment_id):
+    """Actualizar comentario"""
+    data = request.get_json()
+    return proxy_request('comments', f'/api/v1/comments/{comment_id}', 'PUT', data)
+
+@app.route('/api/v1/comments/<int:comment_id>', methods=['DELETE'])
+@auth_required
+def delete_comment(comment_id):
+    """Eliminar comentario"""
+    return proxy_request('comments', f'/api/v1/comments/{comment_id}', 'DELETE')
+
 # =============================================================================
-# RUTAS DE INVESTIGACIONES
+# RUTAS DE USUARIOS (alias para frontend)
+# =============================================================================
+
+@app.route('/api/v1/users/profile', methods=['GET'])
+@auth_required
+def users_get_profile():
+    """Obtener perfil del usuario"""
+    return proxy_request('auth', '/api/v1/auth/profile', 'GET')
+
+@app.route('/api/v1/users/profile', methods=['PUT'])
+@auth_required
+def users_update_profile():
+    """Actualizar perfil del usuario"""
+    data = request.get_json()
+    return proxy_request('auth', '/api/v1/auth/profile', 'PUT', data)
+
+@app.route('/api/v1/users/password', methods=['PUT'])
+@auth_required
+def users_change_password():
+    """Cambiar contraseña"""
+    data = request.get_json()
+    return proxy_request('auth', '/api/v1/auth/password', 'PUT', data)
+
+# =============================================================================
+# RUTAS DE ESTADÍSTICAS
+# =============================================================================
+
+@app.route('/api/v1/stats', methods=['GET'])
+def get_general_stats():
+    """Obtener estadísticas generales"""
+    return proxy_request('documents', '/api/v1/documents/stats', 'GET')
+
+@app.route('/api/v1/stats/documents', methods=['GET'])
+def get_document_stats():
+    """Obtener estadísticas de documentos"""
+    return proxy_request('documents', '/api/v1/documents/stats', 'GET')
+
+@app.route('/api/v1/stats/collections', methods=['GET'])
+def get_collection_stats():
+    """Obtener estadísticas de colecciones"""
+    return proxy_request('collections', '/api/v1/collections/stats', 'GET')
+
+@app.route('/api/v1/stats/users', methods=['GET'])
+@auth_required
+def get_user_stats():
+    """Obtener estadísticas de usuarios"""
+    return proxy_request('auth', '/api/v1/auth/users', 'GET')
+
+# =============================================================================
+# RUTAS DE INVESTIGACIONES (alias /research para frontend)
+# =============================================================================
+
+@app.route('/api/v1/research', methods=['GET'])
+@auth_required
+def get_research_list():
+    """Obtener lista de investigaciones (alias frontend)"""
+    params = request.args.to_dict()
+    return proxy_request('research', '/api/v1/investigations', 'GET', params=params)
+
+@app.route('/api/v1/research/search', methods=['GET'])
+@auth_required
+def search_research():
+    """Buscar investigaciones (alias frontend)"""
+    params = request.args.to_dict()
+    return proxy_request('research', '/api/v1/investigations', 'GET', params=params)
+
+@app.route('/api/v1/research/<int:investigation_id>', methods=['GET'])
+@auth_required
+def get_research_item(investigation_id):
+    """Obtener una investigación (alias frontend)"""
+    return proxy_request('research', f'/api/v1/investigations/{investigation_id}', 'GET')
+
+@app.route('/api/v1/research', methods=['POST'])
+@auth_required
+def create_research_item():
+    """Crear investigación (alias frontend)"""
+    data = request.get_json()
+    return proxy_request('research', '/api/v1/investigations', 'POST', data)
+
+@app.route('/api/v1/research/<int:investigation_id>', methods=['PUT'])
+@auth_required
+def update_research_item(investigation_id):
+    """Actualizar investigación (alias frontend)"""
+    data = request.get_json()
+    return proxy_request('research', f'/api/v1/investigations/{investigation_id}', 'PUT', data)
+
+@app.route('/api/v1/research/<int:investigation_id>', methods=['DELETE'])
+@auth_required
+def delete_research_item(investigation_id):
+    """Eliminar investigación (alias frontend)"""
+    return proxy_request('research', f'/api/v1/investigations/{investigation_id}', 'DELETE')
+
+# =============================================================================
+# RUTAS DE INVESTIGACIONES (original)
 # =============================================================================
 
 @app.route('/api/v1/investigations/<int:investigation_id>/files', methods=['POST'])
