@@ -3,6 +3,9 @@ Servicio de Colecciones - Plataforma de Investigaciones del Museo
 Gestiona colecciones temáticas de documentos.
 """
 
+# =============================================================================
+# IMPORTS
+# =============================================================================
 import os
 import logging
 from datetime import datetime
@@ -18,15 +21,19 @@ import uuid
 from PIL import Image
 import requests
 
-# Instalar PyMySQL como MySQLdb
+# PyMySQL debe registrarse como MySQLdb antes de que SQLAlchemy lo use
 pymysql.install_as_MySQLdb()
 
-# Cargar variables de entorno
+# Cargar variables de entorno desde el archivo .env
 load_dotenv()
+
+# =============================================================================
+# CONFIGURACIÓN DE LA APLICACIÓN
+# =============================================================================
 
 app = Flask(__name__)
 
-# Configuración de la base de datos
+# --- Configuración de base de datos MySQL ---
 DB_HOST = os.getenv('DB_HOST', 'localhost')
 DB_PORT = os.getenv('DB_PORT', '3306')
 DB_USER = os.getenv('DB_USER', 'root')
@@ -34,13 +41,13 @@ DB_PASSWORD = os.getenv('DB_PASSWORD', '')
 DB_NAME = os.getenv('DB_NAME', 'museum_collections_db')
 
 app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'dev-secret-key')
-app.config['JSON_SORT_KEYS'] = False
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False  # Deshabilitar tracking para ahorrar memoria
+app.config['SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'dev-secret-key')  # Clave para firmar JWT
+app.config['JSON_SORT_KEYS'] = False  # Mantener orden de campos en respuestas JSON
 
-# Configuración de archivos
+# --- Configuración de subida de archivos (imágenes de portada) ---
 UPLOAD_FOLDER = os.getenv('UPLOAD_FOLDER', 'uploads')
-MAX_FILE_SIZE = int(os.getenv('MAX_FILE_SIZE', 15728640))  # 15MB para imágenes
+MAX_FILE_SIZE = int(os.getenv('MAX_FILE_SIZE', 15728640))  # 15MB máximo para imágenes
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'tiff', 'svg'}
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -49,15 +56,15 @@ app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
 # Crear directorio de uploads si no existe
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# Inicializar extensiones
+# --- Inicializar extensiones ---
 db = SQLAlchemy(app)
 CORS(app)
 
-# Configurar logging
+# --- Configurar logging ---
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# URL del servicio de documentos
+# URL base del servicio de documentos para consultas internas entre microservicios
 DOCUMENTS_SERVICE_URL = os.getenv('DOCUMENTS_SERVICE_URL', 'http://localhost:5002')
 
 # =============================================================================
@@ -65,24 +72,26 @@ DOCUMENTS_SERVICE_URL = os.getenv('DOCUMENTS_SERVICE_URL', 'http://localhost:500
 # =============================================================================
 
 class Collection(db.Model):
+    """Modelo que representa una colección temática de documentos."""
     __tablename__ = 'collections'
     
     id = db.Column(db.Integer, primary_key=True)
-    titulo = db.Column(db.String(500), nullable=False)
-    descripcion = db.Column(db.Text)
-    portada_path = db.Column(db.String(1000))
-    autor_id = db.Column(db.Integer, nullable=False)
-    is_publica = db.Column(db.Boolean, default=True)
-    total_documentos = db.Column(db.Integer, default=0)
-    visualizaciones = db.Column(db.Integer, default=0)
+    titulo = db.Column(db.String(500), nullable=False)               # Título de la colección
+    descripcion = db.Column(db.Text)                                  # Descripción detallada
+    portada_path = db.Column(db.String(1000))                         # Ruta al archivo de imagen de portada
+    autor_id = db.Column(db.Integer, nullable=False)                  # ID del usuario creador (desnormalizado)
+    is_publica = db.Column(db.Boolean, default=True)                  # Visibilidad: true=pública, false=privada
+    total_documentos = db.Column(db.Integer, default=0)               # Contador cacheado de documentos
+    visualizaciones = db.Column(db.Integer, default=0)                # Contador de visitas
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # Relaciones
+    # Relaciones ORM (cascade elimina documentos suscritos al eliminar la colección)
     documents = db.relationship('CollectionDocument', backref='collection', cascade='all, delete-orphan')
     subscriptions = db.relationship('CollectionSubscription', backref='collection', cascade='all, delete-orphan')
     
     def to_dict(self, include_documents=False):
+        """Convierte la colección a diccionario serializable."""
         result = {
             'id': self.id,
             'titulo': self.titulo,
@@ -102,16 +111,18 @@ class Collection(db.Model):
         return result
 
 class CollectionDocument(db.Model):
+    """Tabla pivote muchos-a-muchos entre colecciones y documentos."""
     __tablename__ = 'collection_documents'
     
     id = db.Column(db.Integer, primary_key=True)
     collection_id = db.Column(db.Integer, db.ForeignKey('collections.id'), nullable=False)
-    document_id = db.Column(db.Integer, nullable=False)
-    orden = db.Column(db.Integer, default=0)
-    agregado_por = db.Column(db.Integer, nullable=False)
+    document_id = db.Column(db.Integer, nullable=False)      # ID del documento (referencia al documents-service)
+    orden = db.Column(db.Integer, default=0)                  # Posición dentro de la colección
+    agregado_por = db.Column(db.Integer, nullable=False)      # ID del usuario que agregó el documento
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     def to_dict(self):
+        """Convierte la relación documento-colección a diccionario."""
         return {
             'id': self.id,
             'collection_id': self.collection_id,
@@ -122,10 +133,11 @@ class CollectionDocument(db.Model):
         }
 
 class CollectionSubscription(db.Model):
+    """Modelo que registra suscripciones de usuarios a colecciones."""
     __tablename__ = 'collection_subscriptions'
     
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, nullable=False)
+    user_id = db.Column(db.Integer, nullable=False)                    # ID del usuario suscrito
     collection_id = db.Column(db.Integer, db.ForeignKey('collections.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -134,14 +146,14 @@ class CollectionSubscription(db.Model):
 # =============================================================================
 
 def allowed_file(filename):
-    """Verificar si el archivo tiene una extensión permitida"""
+    """Verifica si la extensión del archivo está en la lista de permitidas."""
     if not filename or '.' not in filename:
         return False
     extension = filename.rsplit('.', 1)[1].lower()
     return extension in ALLOWED_EXTENSIONS
 
 def allowed_mime_type(mime_type):
-    """Verificar si el tipo MIME es permitido"""
+    """Verifica si el tipo MIME corresponde a una imagen válida."""
     allowed_mimes = {
         'image/png',
         'image/jpeg',
@@ -155,7 +167,9 @@ def allowed_mime_type(mime_type):
     return mime_type in allowed_mimes
 
 def verify_token(token):
-    """Verificar token JWT"""
+    """Decodifica y verifica un token JWT usando la clave secreta compartida.
+    Retorna el payload si es válido, None si expiró o es inválido.
+    """
     try:
         payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
         return payload
@@ -165,30 +179,30 @@ def verify_token(token):
         return None
 
 def get_current_user():
-    """Obtener usuario actual del token"""
+    """Extrae el usuario autenticado desde el header Authorization.
+    Retorna el payload del JWT o None si no hay token válido.
+    """
     auth_header = request.headers.get('Authorization')
     if not auth_header or not auth_header.startswith('Bearer '):
         return None
     
-    token = auth_header[7:]
+    token = auth_header[7:]  # Remover 'Bearer ' del inicio
     payload = verify_token(token)
     return payload
 
 def generate_unique_filename(original_filename):
-    """Generar nombre único para archivo"""
+    """Genera un nombre único para evitar colisiones al guardar archivos."""
     name, ext = os.path.splitext(secure_filename(original_filename))
     unique_id = str(uuid.uuid4())
     return f"{unique_id}_{name}{ext}"
 
 def resize_image(image_path, max_width=800, max_height=600):
-    """Redimensionar imagen para optimizar espacio"""
+    """Redimensiona una imagen manteniendo la proporción si excede las dimensiones máximas."""
     try:
         with Image.open(image_path) as img:
-            # Convertir a RGB si es necesario
             if img.mode in ('RGBA', 'LA', 'P'):
                 img = img.convert('RGB')
             
-            # Calcular nuevas dimensiones manteniendo proporción
             width, height = img.size
             ratio = min(max_width/width, max_height/height)
             
@@ -204,7 +218,9 @@ def resize_image(image_path, max_width=800, max_height=600):
         return False
 
 def get_document_info(document_id, auth_token=None):
-    """Obtener información de un documento desde el servicio de documentos"""
+    """Consulta el servicio de documentos para obtener información de un documento.
+    Usa comunicación HTTP interna entre microservicios.
+    """
     try:
         headers = {}
         if auth_token:
@@ -241,33 +257,32 @@ def health_check():
 
 @app.route('/api/v1/collections', methods=['GET'])
 def get_collections():
-    """Obtener lista de colecciones con paginación y filtros"""
+    """Obtiene lista paginada de colecciones con filtros opcionales (autor, búsqueda, visibilidad)."""
     try:
-        # Verificar autenticación
         current_user = get_current_user()
         
-        # Parámetros de paginación
+        # Parámetros de paginación con límite máximo de 100 por página
         page = request.args.get('page', 1, type=int)
         per_page = min(request.args.get('per_page', 12, type=int), 100)
         
-        # Filtros
+        # Filtros desde query string
         autor_id = request.args.get('autor_id', type=int)
         publicas_solo = request.args.get('publicas_solo', 'true').lower() == 'true'
         mis_colecciones = request.args.get('mis_colecciones', 'false').lower() == 'true'
         buscar = request.args.get('search', '').strip()
         
-        # Construir query
         query = Collection.query
         
-        # Si el usuario está autenticado y quiere ver solo sus colecciones
+        # Lógica de visibilidad:
+        # - Si pide "mis colecciones", filtra por autor
+        # - Si no está autenticado o pide solo públicas: solo colecciones públicas
+        # - Si está autenticado: muestra sus colecciones (públicas + privadas) y las públicas de otros
         if current_user and mis_colecciones:
             query = query.filter(Collection.autor_id == current_user['user_id'])
         else:
-            # Para usuarios no autenticados o vista general, solo colecciones públicas
             if not current_user or publicas_solo:
                 query = query.filter(Collection.is_publica == True)
             else:
-                # Usuario autenticado puede ver sus propias colecciones (públicas y privadas) + públicas de otros
                 query = query.filter(
                     db.or_(
                         Collection.is_publica == True,
@@ -278,6 +293,7 @@ def get_collections():
         if autor_id:
             query = query.filter(Collection.autor_id == autor_id)
         
+        # Búsqueda por texto en título o descripción
         if buscar:
             query = query.filter(
                 db.or_(
@@ -286,15 +302,8 @@ def get_collections():
                 )
             )
         
-        # Ordenar por fecha de creación descendente
         query = query.order_by(Collection.created_at.desc())
-        
-        # Paginar
-        collections = query.paginate(
-            page=page,
-            per_page=per_page,
-            error_out=False
-        )
+        collections = query.paginate(page=page, per_page=per_page, error_out=False)
         
         return jsonify({
             'collections': [col.to_dict() for col in collections.items],
@@ -310,20 +319,20 @@ def get_collections():
 
 @app.route('/api/v1/collections/<int:collection_id>', methods=['GET'])
 def get_collection(collection_id):
-    """Obtener una colección específica con sus documentos"""
+    """Obtiene una colección por ID, incluyendo sus documentos enriquecidos con datos del documents-service."""
     try:
         collection = Collection.query.get_or_404(collection_id)
         
-        # Verificar si es pública o el usuario es el autor
+        # Verificar acceso: solo el autor puede ver colecciones privadas
         current_user = get_current_user()
         if not collection.is_publica and (not current_user or current_user['user_id'] != collection.autor_id):
             return jsonify({'error': 'Acceso denegado'}), 403
         
-        # Incrementar visualizaciones
+        # Incrementar contador de visitas
         collection.visualizaciones += 1
         db.session.commit()
         
-        # Obtener documentos de la colección con su información completa
+        # Obtener información completa de cada documento desde el documents-service
         documents_info = []
         auth_token = request.headers.get('Authorization', '').replace('Bearer ', '') if request.headers.get('Authorization') else None
         
@@ -335,15 +344,12 @@ def get_collection(collection_id):
                 document_data['agregado_en'] = col_doc.created_at.isoformat()
                 documents_info.append(document_data)
         
-        # Ordenar por orden en colección
         documents_info.sort(key=lambda x: x.get('orden_en_coleccion', 0))
         
         result = collection.to_dict()
         result['documents'] = documents_info
         
-        return jsonify({
-            'collection': result
-        })
+        return jsonify({'collection': result})
         
     except Exception as e:
         logger.error(f'Error obteniendo colección: {str(e)}')
@@ -351,14 +357,13 @@ def get_collection(collection_id):
 
 @app.route('/api/v1/collections', methods=['POST'])
 def create_collection():
-    """Crear nueva colección"""
+    """Crea una nueva colección. Soporta JSON y multipart/form-data (para imagen de portada)."""
     try:
-        # Verificar autenticación
         current_user = get_current_user()
         if not current_user:
             return jsonify({'error': 'Autenticación requerida'}), 401
         
-        # Obtener datos del formulario o JSON
+        # Soporta dos formatos de entrada: JSON (sin portada) o multipart (con portada)
         if request.content_type and 'multipart/form-data' in request.content_type:
             titulo = request.form.get('titulo', '').strip()
             descripcion = request.form.get('descripcion', '').strip()
@@ -374,15 +379,13 @@ def create_collection():
         if not titulo:
             return jsonify({'error': 'Título es requerido'}), 400
         
-        # Procesar archivo de portada si existe
+        # Procesar imagen de portada (validación de tipo, almacenamiento y redimensionamiento)
         portada_path = None
         if portada_file and portada_file.filename != '':
-            # Validar extensión del archivo
             if not allowed_file(portada_file.filename):
                 logger.warning(f'Archivo rechazado por extensión: {portada_file.filename}')
                 return jsonify({'error': 'Solo se permiten imágenes (PNG, JPG, JPEG, GIF, WebP)'}), 400
             
-            # Validar tipo MIME si está disponible
             if hasattr(portada_file, 'content_type') and portada_file.content_type:
                 if not allowed_mime_type(portada_file.content_type):
                     logger.warning(f'Archivo rechazado por MIME type: {portada_file.content_type}')
@@ -390,19 +393,14 @@ def create_collection():
             
             logger.info(f'Procesando archivo: {portada_file.filename}, tipo: {portada_file.content_type if hasattr(portada_file, "content_type") else "desconocido"}')
             
-            # Generar nombre único para archivo
             unique_filename = generate_unique_filename(portada_file.filename)
             portada_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
-            
-            # Guardar archivo
             portada_file.save(portada_path)
             
-            # Redimensionar imagen
             if not resize_image(portada_path):
                 os.remove(portada_path)
                 portada_path = None
         
-        # Crear colección
         collection = Collection(
             titulo=titulo,
             descripcion=descripcion,
@@ -423,7 +421,6 @@ def create_collection():
         
     except Exception as e:
         db.session.rollback()
-        # Limpiar archivo si hubo error
         if 'portada_path' in locals() and portada_path and os.path.exists(portada_path):
             os.remove(portada_path)
         logger.error(f'Error creando colección: {str(e)}')
@@ -431,22 +428,21 @@ def create_collection():
 
 @app.route('/api/v1/collections/<int:collection_id>', methods=['PUT'])
 def update_collection(collection_id):
-    """Actualizar colección"""
+    """Actualiza los metadatos de una colección (solo el autor puede hacerlo)."""
     try:
-        # Verificar autenticación
         current_user = get_current_user()
         if not current_user:
             return jsonify({'error': 'Autenticación requerida'}), 401
         
         collection = Collection.query.get_or_404(collection_id)
         
-        # Verificar que el usuario sea el autor
+        # Solo el autor de la colección puede modificarla
         if collection.autor_id != current_user['user_id']:
             return jsonify({'error': 'Solo el autor puede modificar la colección'}), 403
         
         data = request.get_json()
         
-        # Actualizar campos permitidos
+        # Actualizar solo los campos permitidos
         if 'titulo' in data:
             collection.titulo = data['titulo'].strip()
         if 'descripcion' in data:
@@ -471,24 +467,21 @@ def update_collection(collection_id):
 
 @app.route('/api/v1/collections/<int:collection_id>', methods=['DELETE'])
 def delete_collection(collection_id):
-    """Eliminar colección"""
+    """Elimina una colección y su archivo de portada asociado (solo el autor)."""
     try:
-        # Verificar autenticación
         current_user = get_current_user()
         if not current_user:
             return jsonify({'error': 'Autenticación requerida'}), 401
         
         collection = Collection.query.get_or_404(collection_id)
         
-        # Verificar que el usuario sea el autor
         if collection.autor_id != current_user['user_id']:
             return jsonify({'error': 'Solo el autor puede eliminar la colección'}), 403
         
-        # Eliminar archivo de portada si existe
+        # Eliminar archivo de portada del sistema de archivos
         if collection.portada_path and os.path.exists(collection.portada_path):
             os.remove(collection.portada_path)
         
-        # Eliminar colección de la base de datos
         db.session.delete(collection)
         db.session.commit()
         
@@ -503,16 +496,14 @@ def delete_collection(collection_id):
 
 @app.route('/api/v1/collections/<int:collection_id>/documents', methods=['POST'])
 def add_document_to_collection(collection_id):
-    """Agregar documento a colección"""
+    """Agrega un documento existente a una colección. Evita duplicados."""
     try:
-        # Verificar autenticación
         current_user = get_current_user()
         if not current_user:
             return jsonify({'error': 'Autenticación requerida'}), 401
         
         collection = Collection.query.get_or_404(collection_id)
         
-        # Verificar que el usuario sea el autor de la colección
         if collection.autor_id != current_user['user_id']:
             return jsonify({'error': 'Solo el autor puede modificar la colección'}), 403
         
@@ -524,14 +515,14 @@ def add_document_to_collection(collection_id):
         document_id = data['document_id']
         orden = data.get('orden', 0)
         
-        # Verificar que el documento existe y es accesible
+        # Validar que el documento exista consultando al documents-service
         auth_token = request.headers.get('Authorization', '').replace('Bearer ', '')
         doc_info = get_document_info(document_id, auth_token)
         
         if not doc_info:
             return jsonify({'error': 'Documento no encontrado o no accesible'}), 404
         
-        # Verificar si el documento ya está en la colección
+        # Prevenir duplicados en la colección
         existing = CollectionDocument.query.filter_by(
             collection_id=collection_id,
             document_id=document_id
@@ -540,7 +531,6 @@ def add_document_to_collection(collection_id):
         if existing:
             return jsonify({'error': 'El documento ya está en la colección'}), 409
         
-        # Agregar documento a la colección
         collection_document = CollectionDocument(
             collection_id=collection_id,
             document_id=document_id,
@@ -549,11 +539,8 @@ def add_document_to_collection(collection_id):
         )
         
         db.session.add(collection_document)
-        
-        # Actualizar contador de documentos
         collection.total_documentos += 1
         collection.updated_at = datetime.utcnow()
-        
         db.session.commit()
         
         logger.info(f'Documento {document_id} agregado a colección {collection_id}')
@@ -570,20 +557,17 @@ def add_document_to_collection(collection_id):
 
 @app.route('/api/v1/collections/<int:collection_id>/documents/<int:document_id>', methods=['DELETE'])
 def remove_document_from_collection(collection_id, document_id):
-    """Quitar documento de colección"""
+    """Quita un documento de una colección y actualiza el contador."""
     try:
-        # Verificar autenticación
         current_user = get_current_user()
         if not current_user:
             return jsonify({'error': 'Autenticación requerida'}), 401
         
         collection = Collection.query.get_or_404(collection_id)
         
-        # Verificar que el usuario sea el autor de la colección
         if collection.autor_id != current_user['user_id']:
             return jsonify({'error': 'Solo el autor puede modificar la colección'}), 403
         
-        # Buscar relación
         collection_document = CollectionDocument.query.filter_by(
             collection_id=collection_id,
             document_id=document_id
@@ -592,13 +576,9 @@ def remove_document_from_collection(collection_id, document_id):
         if not collection_document:
             return jsonify({'error': 'El documento no está en la colección'}), 404
         
-        # Eliminar relación
         db.session.delete(collection_document)
-        
-        # Actualizar contador de documentos
         collection.total_documentos = max(0, collection.total_documentos - 1)
         collection.updated_at = datetime.utcnow()
-        
         db.session.commit()
         
         logger.info(f'Documento {document_id} quitado de colección {collection_id}')
@@ -612,31 +592,27 @@ def remove_document_from_collection(collection_id, document_id):
 
 @app.route('/api/v1/collections/<int:collection_id>/subscribe', methods=['POST'])
 def toggle_subscription(collection_id):
-    """Suscribirse/desuscribirse de colección"""
+    """Activa o desactiva la suscripción de un usuario a una colección (toggle)."""
     try:
-        # Verificar autenticación
         current_user = get_current_user()
         if not current_user:
             return jsonify({'error': 'Autenticación requerida'}), 401
         
         collection = Collection.query.get_or_404(collection_id)
         
-        # Verificar que la colección sea pública o el usuario sea el autor
+        # Solo colecciones públicas o propias pueden recibir suscripciones
         if not collection.is_publica and collection.autor_id != current_user['user_id']:
             return jsonify({'error': 'Acceso denegado'}), 403
         
-        # Buscar suscripción existente
         subscription = CollectionSubscription.query.filter_by(
             user_id=current_user['user_id'],
             collection_id=collection_id
         ).first()
         
         if subscription:
-            # Desuscribirse
             db.session.delete(subscription)
             action = 'unsubscribed'
         else:
-            # Suscribirse
             subscription = CollectionSubscription(
                 user_id=current_user['user_id'],
                 collection_id=collection_id
@@ -658,7 +634,7 @@ def toggle_subscription(collection_id):
 
 @app.route('/api/v1/collections/<int:collection_id>/portada', methods=['GET'])
 def get_collection_cover(collection_id):
-    """Obtener imagen de portada de la colección"""
+    """Sirve la imagen de portada de una colección como archivo estático."""
     try:
         collection = Collection.query.get_or_404(collection_id)
         
@@ -677,14 +653,13 @@ def get_collection_cover(collection_id):
 
 @app.route('/api/v1/collections/stats', methods=['GET'])
 def get_collections_stats():
-    """Obtener estadísticas de colecciones"""
+    """Obtiene estadísticas globales de colecciones (totales, documentos, top más vistas)."""
     try:
         total_collections = Collection.query.filter_by(is_publica=True).count()
         total_documents = db.session.query(
             db.func.sum(Collection.total_documentos)
         ).filter_by(is_publica=True).scalar() or 0
         
-        # Top colecciones más vistas
         top_collections = Collection.query.filter_by(is_publica=True)\
             .order_by(Collection.visualizaciones.desc())\
             .limit(5).all()
@@ -700,27 +675,30 @@ def get_collections_stats():
         return jsonify({'error': 'Error interno del servidor'}), 500
 
 # =============================================================================
-# MANEJADORES DE ERRORES
+# MANEJADORES DE ERRORES GLOBALES
 # =============================================================================
 
 @app.errorhandler(404)
 def not_found(error):
+    """Responde con JSON cuando no se encuentra un recurso."""
     return jsonify({'error': 'Recurso no encontrado'}), 404
 
 @app.errorhandler(500)
 def internal_error(error):
+    """Responde con JSON ante errores internos no capturados."""
     return jsonify({'error': 'Error interno del servidor'}), 500
 
 @app.errorhandler(413)
 def too_large(error):
+    """Responde cuando el archivo subido excede el tamaño máximo permitido."""
     return jsonify({'error': 'Archivo demasiado grande'}), 413
 
 # =============================================================================
-# INICIALIZACIÓN
+# INICIALIZACIÓN Y ARRANQUE
 # =============================================================================
 
 def create_tables():
-    """Crear tablas de la base de datos"""
+    """Crea las tablas en la base de datos si no existen (sincronización del modelo)."""
     try:
         db.create_all()
         logger.info('Tablas de base de datos creadas exitosamente')
@@ -728,7 +706,6 @@ def create_tables():
         logger.error(f'Error creando tablas: {str(e)}')
 
 if __name__ == '__main__':
-    # Crear tablas
     with app.app_context():
         create_tables()
     

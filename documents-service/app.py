@@ -486,9 +486,14 @@ def update_document(document_id):
         if 'tags' in data:
             # Eliminar tags existentes
             DocumentTag.query.filter_by(document_id=document.id).delete()
+            db.session.flush()
             
             # Agregar nuevos tags
-            tag_names = [tag.strip() for tag in data['tags'] if tag.strip()]
+            tags_raw = data['tags']
+            if isinstance(tags_raw, str):
+                tag_names = [t.strip() for t in tags_raw.split(',') if t.strip()]
+            else:
+                tag_names = [t.strip() for t in tags_raw if t.strip()]
             for tag_name in tag_names:
                 tag = Tag.query.filter_by(nombre=tag_name).first()
                 if not tag:

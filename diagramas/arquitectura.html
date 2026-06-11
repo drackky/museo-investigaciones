@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🗺️ Mapa de Arquitectura - Plataforma del Museo</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-dark: #08090f;
+            --bg-space: #0d0e17;
+            --bg-panel: rgba(15, 17, 34, 0.7);
+            --bg-card: rgba(26, 29, 56, 0.45);
+            --bg-card-hover: rgba(38, 43, 82, 0.65);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(255, 255, 255, 0.18);
+            
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            
+            --gateway-glow: 168, 85, 247;
+            --auth-glow: 244, 63, 94;
+            --docs-glow: 59, 130, 246;
+            --col-glow: 16, 185, 129;
+            --comm-glow: 236, 72, 153;
+            --res-glow: 20, 184, 166;
+            --db-glow: 100, 116, 139;
+            --front-glow: 14, 165, 233;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(88, 28, 135, 0.08) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Navbar Coherente */
+        nav {
+            padding: 1.5rem 3rem;
+            border-bottom: 1px solid var(--border-color);
+            background: rgba(8, 9, 15, 0.7);
+            backdrop-filter: blur(12px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            text-decoration: none;
+            color: white;
+        }
+
+        .nav-logo-icon {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, rgb(168, 85, 247), rgb(59, 130, 246));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.3);
+        }
+
+        .nav-logo h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .nav-link {
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            border: 1px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.03);
+            border-color: var(--border-color);
+        }
+
+        .nav-link.active {
+            color: white;
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(59, 130, 246, 0.15));
+            border-color: rgba(168, 85, 247, 0.3);
+        }
+
+        /* Contenedor Principal */
+        main {
+            display: grid;
+            grid-template-columns: 1.3fr 1fr;
+            flex-grow: 1;
+            height: calc(100vh - 75px);
+            z-index: 1;
+        }
+
+        @media (max-width: 1200px) {
+            main {
+                grid-template-columns: 1fr;
+                height: auto;
+                overflow-y: auto;
+            }
+        }
+
+        /* Panel del Mapa del Diagrama */
+        .diagram-panel {
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-right: 1px solid var(--border-color);
+            position: relative;
+            background: rgba(11, 12, 22, 0.2);
+            overflow: auto;
+        }
+
+        .diagram-container {
+            width: 100%;
+            max-width: 800px;
+            aspect-ratio: 4/3;
+            position: relative;
+            user-select: none;
+        }
+
+        /* SVG de Conexión */
+        .svg-connections {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .connection-line {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.07);
+            stroke-width: 2;
+            transition: all 0.5s ease;
+        }
+
+        .connection-line.active {
+            stroke-width: 3.5;
+        }
+
+        /* Efecto de partículas viajando por el cable */
+        .line-flow {
+            stroke-dasharray: 10, 20;
+            animation: dash 1s linear infinite;
+            stroke-width: 2.5;
+            opacity: 0.1;
+            transition: opacity 0.4s ease;
+        }
+
+        .line-flow.active {
+            opacity: 1;
+        }
+
+        @keyframes dash {
+            to {
+                stroke-dashoffset: -30;
+            }
+        }
+
+        /* Nodo en el Canvas */
+        .node-card {
+            position: absolute;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 0.8rem 1.1rem;
+            color: var(--text-primary);
+            cursor: pointer;
+            z-index: 2;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(12px);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .node-card:hover {
+            transform: scale(1.03) translateY(-2px);
+            border-color: var(--border-hover);
+            background: var(--bg-card-hover);
+        }
+
+        .node-card.selected {
+            border-width: 1.5px;
+            background: rgba(25, 28, 55, 0.85);
+            box-shadow: 0 0 20px rgba(var(--card-glow), 0.2);
+            border-color: rgba(var(--card-glow), 0.6);
+        }
+
+        .node-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            color: rgba(var(--card-glow), 1);
+        }
+
+        .node-info-text h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .node-info-text p {
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+        }
+
+        /* Posiciones fijas en el Canvas */
+        .node-front { top: 40%; left: 5%; --card-glow: var(--front-glow); }
+        .node-gateway { top: 40%; left: 35%; --card-glow: var(--gateway-glow); }
+        .node-service-auth { top: 5%; left: 68%; --card-glow: var(--auth-glow); }
+        .node-service-docs { top: 22%; left: 68%; --card-glow: var(--docs-glow); }
+        .node-service-col { top: 40%; left: 68%; --card-glow: var(--col-glow); }
+        .node-service-comm { top: 58%; left: 68%; --card-glow: var(--comm-glow); }
+        .node-service-res { top: 75%; left: 68%; --card-glow: var(--res-glow); }
+        .node-db { top: 78%; left: 36%; --card-glow: var(--db-glow); border-radius: 40% / 12%; height: 65px; display: flex; justify-content: center;}
+
+        /* Panel de Inspección (Lado Derecho) */
+        .inspector-panel {
+            background: var(--bg-panel);
+            backdrop-filter: blur(20px);
+            border-left: 1px solid var(--border-color);
+            padding: 2.2rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .inspector-placeholder {
+            margin: auto;
+            text-align: center;
+            max-width: 320px;
+            color: var(--text-secondary);
+        }
+
+        .inspector-placeholder-icon {
+            font-size: 3rem;
+            margin-bottom: 1.2rem;
+            color: var(--text-muted);
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .inspector-placeholder h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .inspector-placeholder p {
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+
+        /* Detalles del Inspector */
+        .inspector-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1.2rem;
+        }
+
+        .inspector-badge {
+            background: rgba(var(--badge-color), 0.12);
+            color: rgb(var(--badge-color));
+            border: 1px solid rgba(var(--badge-color), 0.25);
+            padding: 0.2rem 0.5rem;
+            border-radius: 6px;
+            font-size: 0.72rem;
+            font-weight: 700;
+        }
+
+        .inspector-title-area h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .inspector-title-area p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .inspector-section-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.6rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .inspector-section-title::after {
+            content: '';
+            flex-grow: 1;
+            height: 1px;
+            background: var(--border-color);
+        }
+
+        .junior-explanation {
+            background: rgba(16, 185, 129, 0.05);
+            border: 1px dashed rgba(16, 185, 129, 0.25);
+            border-radius: 10px;
+            padding: 1rem;
+            font-size: 0.82rem;
+            line-height: 1.5;
+            color: #a7f3d0;
+        }
+
+        .junior-explanation strong {
+            color: #34d399;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .inspector-card-meta {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            font-size: 0.8rem;
+        }
+
+        .meta-item {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .meta-label { color: var(--text-secondary); }
+        .meta-value { color: var(--text-primary); font-weight: 500; }
+        .meta-code { font-family: monospace; background: rgba(0,0,0,0.3); padding: 0.1rem 0.3rem; border-radius: 4px; font-size: 0.78rem; border: 1px solid var(--border-color); }
+
+        .endpoint-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            max-height: 180px;
+            overflow-y: auto;
+            padding-right: 0.3rem;
+        }
+
+        .endpoint-item {
+            background: rgba(0, 0, 0, 0.15);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.5rem 0.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.75rem;
+        }
+
+        .endpoint-method {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            padding: 0.1rem 0.3rem;
+            border-radius: 4px;
+            font-size: 0.65rem;
+            min-width: 45px;
+            text-align: center;
+        }
+
+        .method-get { background: rgba(59, 130, 246, 0.12); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.2); }
+        .method-post { background: rgba(16, 185, 129, 0.12); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.2); }
+        .method-put { background: rgba(245, 158, 11, 0.12); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.2); }
+        .method-delete { background: rgba(244, 63, 94, 0.12); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.2); }
+        .method-sql { background: rgba(100, 116, 139, 0.12); color: #cbd5e1; border: 1px solid rgba(100, 116, 139, 0.2); }
+
+        .endpoint-path { font-family: monospace; color: var(--text-primary); flex-grow: 1; margin-left: 0.6rem; }
+        .endpoint-target { color: var(--text-muted); font-size: 0.7rem; }
+
+        .btn-toggle-container {
+            position: absolute;
+            bottom: 1.5rem;
+            left: 1.5rem;
+            z-index: 5;
+        }
+
+        .btn-flow {
+            background: linear-gradient(135deg, rgb(168, 85, 247), rgb(59, 130, 246));
+            color: white;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
+            transition: transform 0.2s ease;
+        }
+
+        .btn-flow:hover {
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <a href="index.html" class="nav-logo">
+            <div class="nav-logo-icon">🏛️</div>
+            <h1>Portal Junior del Museo</h1>
+        </a>
+        <div class="nav-links">
+            <a href="index.html" class="nav-link">🏠 Inicio</a>
+            <a href="arquitectura.html" class="nav-link active">🗺️ Arquitectura</a>
+            <a href="base_datos.html" class="nav-link">🛢️ Base de Datos</a>
+            <a href="flujo_datos.html" class="nav-link">🔄 Flujo de Datos</a>
+        </div>
+    </nav>
+
+    <main>
+        <!-- Panel del Mapa (Lado Izquierdo) -->
+        <div class="diagram-panel">
+            <div class="btn-toggle-container">
+                <button class="btn-flow" id="btn-flow-toggle" onclick="toggleFlows()">⚡ Mostrar Peticiones</button>
+            </div>
+            
+            <div class="diagram-container" id="canvas">
+                <!-- SVG de Conexiones -->
+                <svg class="svg-connections" id="svg-canvas" viewBox="0 0 800 600" width="100%" height="100%">
+                    <defs>
+                        <filter id="glow-purple" x="-20%" y="-20%" width="140%" height="140%">
+                            <feGaussianBlur stdDeviation="5" result="blur" />
+                            <feMerge>
+                                <feMergeNode in="blur" />
+                                <feMergeNode in="SourceGraphic" />
+                            </feMerge>
+                        </filter>
+                    </defs>
+
+                    <!-- Cables apagados -->
+                    <path d="M 180,265 L 285,265" class="connection-line" id="line-front-gw" />
+                    <path d="M 430,265 L 500,265 L 500,60 L 550,60" class="connection-line" id="line-gw-auth" />
+                    <path d="M 430,265 L 500,265 L 500,160 L 550,160" class="connection-line" id="line-gw-docs" />
+                    <path d="M 430,265 L 550,265" class="connection-line" id="line-gw-col" />
+                    <path d="M 430,265 L 500,265 L 500,370 L 550,370" class="connection-line" id="line-gw-comm" />
+                    <path d="M 430,265 L 500,265 L 500,470 L 550,470" class="connection-line" id="line-gw-res" />
+                    
+                    <path d="M 720,70 L 780,70 L 780,530 L 410,530 L 410,480" class="connection-line" id="line-auth-db" />
+                    <path d="M 720,170 L 770,170 L 770,520 L 410,520 L 410,480" class="connection-line" id="line-docs-db" />
+                    <path d="M 720,270 L 760,270 L 760,510 L 410,510 L 410,480" class="connection-line" id="line-col-db" />
+                    <path d="M 720,380 L 750,380 L 750,500 L 410,500 L 410,480" class="connection-line" id="line-comm-db" />
+                    <path d="M 720,480 L 740,480 L 740,490 L 410,490 L 410,480" class="connection-line" id="line-res-db" />
+
+                    <!-- Cables encendidos (Partículas) -->
+                    <path d="M 180,265 L 285,265" class="line-flow" id="flow-front-gw" stroke="rgb(14, 165, 233)" />
+                    <path d="M 430,265 L 500,265 L 500,60 L 550,60" class="line-flow" id="flow-gw-auth" stroke="rgb(244, 63, 94)" />
+                    <path d="M 430,265 L 500,265 L 500,160 L 550,160" class="line-flow" id="flow-gw-docs" stroke="rgb(59, 130, 246)" />
+                    <path d="M 430,265 L 550,265" class="line-flow" id="flow-gw-col" stroke="rgb(16, 185, 129)" />
+                    <path d="M 430,265 L 500,265 L 500,370 L 550,370" class="line-flow" id="flow-gw-comm" stroke="rgb(236, 72, 153)" />
+                    <path d="M 430,265 L 500,265 L 500,470 L 550,470" class="line-flow" id="flow-gw-res" stroke="rgb(20, 184, 166)" />
+
+                    <path d="M 720,70 L 780,70 L 780,530 L 410,530 L 410,480" class="line-flow" id="flow-auth-db" stroke="rgb(244, 63, 94)" />
+                    <path d="M 720,170 L 770,170 L 770,520 L 410,520 L 410,480" class="line-flow" id="flow-docs-db" stroke="rgb(59, 130, 246)" />
+                    <path d="M 720,270 L 760,270 L 760,510 L 410,510 L 410,480" class="line-flow" id="flow-col-db" stroke="rgb(16, 185, 129)" />
+                    <path d="M 720,380 L 750,380 L 750,500 L 410,500 L 410,480" class="line-flow" id="flow-comm-db" stroke="rgb(236, 72, 153)" />
+                    <path d="M 720,480 L 740,480 L 740,490 L 410,490 L 410,480" class="line-flow" id="flow-res-db" stroke="rgb(20, 184, 166)" />
+                </svg>
+
+                <!-- Cards de los Nodos -->
+                <div class="node-card node-front" id="node-front" onclick="selectNode('front')">
+                    <div class="node-icon">💻</div>
+                    <div class="node-info-text">
+                        <h3>Frontend React</h3>
+                        <p>Puerto 3001</p>
+                    </div>
+                </div>
+
+                <div class="node-card node-gateway" id="node-gateway" onclick="selectNode('gateway')">
+                    <div class="node-icon">🛡️</div>
+                    <div class="node-info-text">
+                        <h3>API Gateway</h3>
+                        <p>Puerto 5000</p>
+                    </div>
+                </div>
+
+                <div class="node-card node-service-auth" id="node-auth" onclick="selectNode('auth')">
+                    <div class="node-icon">🔐</div>
+                    <div class="node-info-text">
+                        <h3>Auth Service</h3>
+                        <p>Puerto 5001</p>
+                    </div>
+                </div>
+
+                <div class="node-card node-service-docs" id="node-docs" onclick="selectNode('docs')">
+                    <div class="node-icon">📄</div>
+                    <div class="node-info-text">
+                        <h3>Documents Service</h3>
+                        <p>Puerto 5002</p>
+                    </div>
+                </div>
+
+                <div class="node-card node-service-col" id="node-col" onclick="selectNode('col')">
+                    <div class="node-icon">🗂️</div>
+                    <div class="node-info-text">
+                        <h3>Collections Service</h3>
+                        <p>Puerto 5003</p>
+                    </div>
+                </div>
+
+                <div class="node-card node-service-comm" id="node-comm" onclick="selectNode('comm')">
+                    <div class="node-icon">💬</div>
+                    <div class="node-info-text">
+                        <h3>Comments Service</h3>
+                        <p>Puerto 5004</p>
+                    </div>
+                </div>
+
+                <div class="node-card node-service-res" id="node-res" onclick="selectNode('res')">
+                    <div class="node-icon">🔬</div>
+                    <div class="node-info-text">
+                        <h3>Research Service</h3>
+                        <p>Puerto 5005</p>
+                    </div>
+                </div>
+
+                <div class="node-card node-db" id="node-db" onclick="selectNode('db')">
+                    <div class="node-icon">🛢️</div>
+                    <div class="node-info-text">
+                        <h3>MySQL DB</h3>
+                        <p>Puerto 3306</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel del Inspector (Lado Derecho) -->
+        <div class="inspector-panel" id="inspector">
+            <div class="inspector-placeholder" id="inspector-empty-state">
+                <div class="inspector-placeholder-icon">🗺️</div>
+                <h2>Explorador del Sistema</h2>
+                <p>Haz clic en cualquier caja del diagrama de arquitectura para ver explicaciones didácticas de nivel junior sobre su funcionamiento, endpoints y tecnologías.</p>
+            </div>
+
+            <!-- Contenido dinámico -->
+            <div id="inspector-content" style="display: none;">
+                <div class="inspector-header">
+                    <div class="node-icon" id="inspector-icon" style="background: rgba(var(--badge-color), 0.12);">🏢</div>
+                    <div class="inspector-title-area">
+                        <h2 id="inspector-name">Service Name</h2>
+                        <p id="inspector-subtitle">Subtitle</p>
+                    </div>
+                    <div class="inspector-badge" id="inspector-port-badge">PORT</div>
+                </div>
+
+                <!-- Explicación Junior -->
+                <div class="junior-explanation">
+                    <p id="inspector-junior-explain">Explicación didáctica sobre el componente.</p>
+                </div>
+
+                <div>
+                    <h4 class="inspector-section-title">¿Qué rol cumple en la práctica?</h4>
+                    <p id="inspector-desc" style="font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary);"></p>
+                </div>
+
+                <div>
+                    <h4 class="inspector-section-title">Estructura & Ruta en el proyecto</h4>
+                    <div class="inspector-card-meta">
+                        <div class="meta-item">
+                            <span class="meta-label">Directorio local:</span>
+                            <span class="meta-value meta-code" id="inspector-path">/service</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Archivo base:</span>
+                            <span class="meta-value meta-code" id="inspector-entry">app.py</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Librerías principales:</span>
+                            <span class="meta-value" id="inspector-tech">Flask, SQLAlchemy</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="inspector-section-title">Endpoints o Tablas Clave</h4>
+                    <div class="endpoint-list" id="inspector-endpoints"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const systemData = {
+            front: {
+                name: "Frontend (React App)",
+                subtitle: "La Interfaz que el usuario ve",
+                port: "Puerto 3001",
+                explain: "💡 <strong>Consejo de Junior:</strong> El Frontend es el código que se ejecuta en el navegador web del usuario (Chrome, Firefox). No tiene acceso directo a bases de datos por seguridad. Por lo tanto, para mostrar o guardar información, debe realizar peticiones HTTP (usando fetch o axios) al API Gateway en el puerto 5000.",
+                desc: "Es una Single Page Application (SPA) construida en React. Contiene las páginas visuales (formularios, listas de documentos, buscador) y gestiona los tokens de inicio de sesión guardándolos de forma segura en la memoria de la app.",
+                path: "/frontend",
+                entry: "src/main.jsx",
+                tech: "React, Vite, Axios",
+                glow: "14, 165, 233",
+                icon: "💻",
+                connections: ["line-front-gw"],
+                endpoints: [
+                    { method: "GET", path: "/", desc: "Página de inicio (Dashboard)" },
+                    { method: "GET", path: "/login", desc: "Formulario de inicio de sesión" },
+                    { method: "GET", path: "/collections", desc: "Listado de colecciones de museo" }
+                ]
+            },
+            gateway: {
+                name: "API Gateway Central",
+                subtitle: "El único punto de contacto exterior",
+                port: "Puerto 5000",
+                explain: "💡 <strong>Consejo de Junior:</strong> En lugar de que el Frontend hable directamente con los 5 microservicios independientes (que estarían en 5 puertos distintos expuestos al exterior), habla únicamente con el Gateway en el puerto 5000. El Gateway actúa como 'recepcionista', desviando cada llamada al puerto interno correcto en secreto.",
+                desc: "Es un servidor Flask ligero. Su única tarea es recibir todas las peticiones externas, evitar problemas con políticas de CORS del navegador, revisar que los encabezados de autenticación JWT sean correctos y hacer la redirección interna de forma transparente.",
+                path: "/api-gateway",
+                entry: "app.py",
+                tech: "Python, Flask, Requests",
+                glow: "168, 85, 247",
+                icon: "🛡️",
+                connections: ["line-front-gw", "line-gw-auth", "line-gw-docs", "line-gw-col", "line-gw-comm", "line-gw-res"],
+                endpoints: [
+                    { method: "POST", path: "/api/v1/auth/*", desc: "Redirige internamente al puerto 5001" },
+                    { method: "GET", path: "/api/v1/documents/*", desc: "Redirige internamente al puerto 5002" },
+                    { method: "GET", path: "/api/v1/collections/*", desc: "Redirige internamente al puerto 5003" }
+                ]
+            },
+            auth: {
+                name: "Auth Service",
+                subtitle: "Servicio de Usuarios y Llaves JWT",
+                port: "Puerto 5001",
+                desc: "Este microservicio se encarga de crear nuevos usuarios en la base de datos, encriptar sus contraseñas antes de guardarlas usando bcrypt (¡nunca se guardan contraseñas en texto plano!), y generar un Token JWT firmado digitalmente cuando el usuario inicia sesión de forma correcta.",
+                explain: "💡 <strong>Consejo de Junior:</strong> Este servicio crea un 'Token' que es como un pase de entrada digital con fecha de vencimiento. El Frontend guarda ese token y lo adjunta en cada petición futura para demostrar que el usuario ya inició sesión.",
+                path: "/auth-service",
+                entry: "app.py",
+                tech: "Python, Flask, PyJWT, Flask-Bcrypt",
+                glow: "244, 63, 94",
+                icon: "🔐",
+                connections: ["line-gw-auth", "line-auth-db"],
+                endpoints: [
+                    { method: "POST", path: "/api/v1/auth/register", desc: "Registra investigadores con contraseñas seguras" },
+                    { method: "POST", path: "/api/v1/auth/login", desc: "Valida usuario y le otorga su pase JWT" }
+                ]
+            },
+            docs: {
+                name: "Documents Service",
+                subtitle: "Administrador de Documentos",
+                port: "Puerto 5002",
+                desc: "Gestiona los metadatos de los archivos del museo (nombre del autor, descripción, fecha del descubrimiento arqueológico, etiquetas del archivo) y guarda la ruta local donde está almacenado el documento físico subido.",
+                explain: "💡 <strong>Consejo de Junior:</strong> En bases de datos nunca guardamos el 'archivo' físico PDF o la imagen de forma directa porque ralentizaría el sistema. En su lugar, guardamos el archivo en un disco duro y guardamos en la base de datos una cadena de texto sencilla con la ruta a dicho archivo.",
+                path: "/documents-service",
+                entry: "app.py",
+                tech: "Python, Flask, SQLAlchemy",
+                glow: "59, 130, 246",
+                icon: "📄",
+                connections: ["line-gw-docs", "line-docs-db"],
+                endpoints: [
+                    { method: "GET", path: "/api/v1/documents", desc: "Obtiene documentos arqueológicos públicos" },
+                    { method: "POST", path: "/api/v1/documents", desc: "Sube y registra un nuevo archivo técnico" }
+                ]
+            },
+            col: {
+                name: "Collections Service",
+                subtitle: "Agrupador de Documentos",
+                port: "Puerto 5003",
+                desc: "Permite a los investigadores crear álbumes o colecciones de investigación temáticas (por ejemplo, 'Arte Rupestre'). Controla la relación Muchos a Muchos entre colecciones y documentos arqueológicos, así como los contadores de likes y valoraciones.",
+                explain: "💡 <strong>Consejo de Junior:</strong> Como un documento puede estar en varias colecciones, y una colección tiene varios documentos, este servicio interactúa con una tabla asociativa intermedia llamada 'collection_documents' para no duplicar datos.",
+                path: "/collections-service",
+                entry: "app.py",
+                tech: "Python, Flask, SQLAlchemy",
+                glow: "16, 185, 129",
+                icon: "🗂️",
+                connections: ["line-gw-col", "line-col-db"],
+                endpoints: [
+                    { method: "POST", path: "/api/v1/collections", desc: "Crea una nueva colección de museo" },
+                    { method: "POST", path: "/api/v1/collections/<id>/documents", desc: "Vincula un documento a la colección" }
+                ]
+            },
+            comm: {
+                name: "Comments Service",
+                subtitle: "Foro de Debates de Investigadores",
+                port: "Puerto 5004",
+                desc: "Gestiona los comentarios que los arqueólogos escriben en las fichas de documentos o colecciones. Soporta hilos de conversación, lo que significa que un comentario puede ser una respuesta directa a otro comentario anterior.",
+                explain: "💡 <strong>Consejo de Junior:</strong> Para soportar respuestas anidadas de forma recursiva, cada registro de comentario tiene una propiedad opcional llamada 'parent_comment_id' que apunta al ID de otro comentario dentro de la misma tabla.",
+                path: "/comments-service",
+                entry: "app.py",
+                tech: "Python, Flask, SQLAlchemy",
+                glow: "236, 72, 153",
+                icon: "💬",
+                connections: ["line-gw-comm", "line-comm-db"],
+                endpoints: [
+                    { method: "GET", path: "/api/v1/documents/<id>/comments", desc: "Obtiene hilos de comentarios de un documento" },
+                    { method: "POST", path: "/api/v1/documents/<id>/comments", desc: "Escribe comentarios o responde en un hilo" }
+                ]
+            },
+            res: {
+                name: "Research Service",
+                subtitle: "Herramientas de Sincronización Científica",
+                port: "Puerto 5005",
+                desc: "Un servicio diseñado específicamente para la colaboración avanzada entre investigadores. Se encarga de administrar notas de campo compartidas y coordinar la validación y sincronización de metadatos de hallazgos.",
+                explain: "💡 <strong>Consejo de Junior:</strong> Este microservicio está desacoplado para tareas pesadas de colaboración, permitiendo sincronizar fichas técnicas sin interferir con el tráfico básico del login o listado de documentos.",
+                path: "/research-service",
+                entry: "app.py",
+                tech: "Python, Flask, SQLAlchemy",
+                glow: "20, 184, 166",
+                icon: "🔬",
+                connections: ["line-gw-res", "line-res-db"],
+                endpoints: [
+                    { method: "GET", path: "/api/v1/research/projects", desc: "Obtiene proyectos arqueológicos colaborativos" },
+                    { method: "POST", path: "/api/v1/research/notes", desc: "Guarda notas técnicas y apuntes de excavación" }
+                ]
+            },
+            db: {
+                name: "MySQL Database",
+                subtitle: "La persistencia permanente",
+                port: "Puerto 3306",
+                desc: "Es el motor de base de datos relacional MySQL donde se almacenan permanentemente todos los datos estructurados del sistema del museo.",
+                explain: "💡 <strong>Consejo de Junior:</strong> En microservicios se recomienda que cada uno tenga su propia base de datos aislada. En este proyecto integrador, todos comparten una base de datos centralizada de MySQL pero separan lógicamente sus consultas mediante tablas independientes. La base de datos corre por defecto en el puerto estándar 3306.",
+                path: "/database",
+                entry: "init_databases.sql",
+                tech: "MySQL 8.0, SQL",
+                glow: "100, 116, 139",
+                icon: "🛢️",
+                connections: ["line-auth-db", "line-docs-db", "line-col-db", "line-comm-db", "line-res-db"],
+                endpoints: [
+                    { method: "SQL", path: "users", desc: "Datos de cuentas de investigadores" },
+                    { method: "SQL", path: "documents", desc: "Fichas técnicas y rutas de archivos" },
+                    { method: "SQL", path: "collections", desc: "Agrupaciones de colecciones de museo" },
+                    { method: "SQL", path: "comments", desc: "Registros de debates e interacciones" }
+                ]
+            }
+        };
+
+        let activeNode = null;
+        let flowActive = false;
+
+        function selectNode(nodeId) {
+            // Limpiar clases anteriores
+            document.querySelectorAll(".node-card").forEach(c => c.classList.remove("selected"));
+            document.querySelectorAll(".connection-line").forEach(l => {
+                l.classList.remove("active");
+                l.style.stroke = "rgba(255, 255, 255, 0.07)";
+            });
+            document.querySelectorAll(".line-flow").forEach(f => f.classList.remove("active"));
+
+            if (activeNode === nodeId) {
+                activeNode = null;
+                document.getElementById("inspector-empty-state").style.display = "block";
+                document.getElementById("inspector-content").style.display = "none";
+                return;
+            }
+
+            activeNode = nodeId;
+            const card = document.getElementById(`node-${nodeId}`);
+            card.classList.add("selected");
+
+            const data = systemData[nodeId];
+
+            document.getElementById("inspector-empty-state").style.display = "none";
+            const content = document.getElementById("inspector-content");
+            content.style.display = "flex";
+            content.style.flexDirection = "column";
+            content.style.gap = "1.5rem";
+
+            document.getElementById("inspector-icon").innerHTML = data.icon;
+            document.getElementById("inspector-icon").style.color = `rgb(${data.glow})`;
+            document.getElementById("inspector-name").innerText = data.name;
+            document.getElementById("inspector-subtitle").innerText = data.subtitle;
+            
+            const badge = document.getElementById("inspector-port-badge");
+            badge.innerText = data.port;
+            badge.style.color = `rgb(${data.glow})`;
+            badge.style.borderColor = `rgba(${data.glow}, 0.25)`;
+            badge.style.background = `rgba(${data.glow}, 0.12)`;
+
+            document.getElementById("inspector-junior-explain").innerHTML = data.explain;
+            document.getElementById("inspector-desc").innerText = data.desc;
+            document.getElementById("inspector-path").innerText = data.path;
+            document.getElementById("inspector-entry").innerText = data.entry;
+            document.getElementById("inspector-tech").innerText = data.tech;
+
+            document.getElementById("inspector").style.setProperty('--badge-color', data.glow);
+
+            // Inyectar endpoints/tablas
+            const epsContainer = document.getElementById("inspector-endpoints");
+            epsContainer.innerHTML = "";
+            data.endpoints.forEach(ep => {
+                const epDiv = document.createElement("div");
+                epDiv.className = "endpoint-item";
+                let mClass = "method-get";
+                if (ep.method.toLowerCase() === "post") mClass = "method-post";
+                else if (ep.method.toLowerCase() === "put") mClass = "method-put";
+                else if (ep.method.toLowerCase() === "delete") mClass = "method-delete";
+                else if (ep.method.toLowerCase() === "sql") mClass = "method-sql";
+
+                epDiv.innerHTML = `
+                    <span class="endpoint-method ${mClass}">${ep.method}</span>
+                    <span class="endpoint-path">${ep.path}</span>
+                    <span class="endpoint-target">${ep.desc}</span>
+                `;
+                epsContainer.appendChild(epDiv);
+            });
+
+            // Activar cables
+            data.connections.forEach(connId => {
+                const line = document.getElementById(connId);
+                if (line) {
+                    line.classList.add("active");
+                    line.style.stroke = `rgba(${data.glow}, 0.75)`;
+                    line.style.filter = "url(#glow-purple)";
+                }
+
+                if (flowActive) {
+                    const flowId = connId.replace("line-", "flow-");
+                    const flow = document.getElementById(flowId);
+                    if (flow) flow.classList.add("active");
+                }
+            });
+        }
+
+        function toggleFlows() {
+            const btn = document.getElementById("btn-flow-toggle");
+            flowActive = !flowActive;
+
+            if (flowActive) {
+                btn.style.background = "linear-gradient(135deg, rgb(16, 185, 129), rgb(59, 130, 246))";
+                btn.innerText = "⚡ Ocultar Peticiones";
+                
+                if (activeNode) {
+                    systemData[activeNode].connections.forEach(connId => {
+                        const flowId = connId.replace("line-", "flow-");
+                        const flow = document.getElementById(flowId);
+                        if (flow) flow.classList.add("active");
+                    });
+                }
+            } else {
+                btn.style.background = "linear-gradient(135deg, rgb(168, 85, 247), rgb(59, 130, 246))";
+                btn.innerText = "⚡ Mostrar Peticiones";
+                document.querySelectorAll(".line-flow").forEach(f => f.classList.remove("active"));
+            }
+        }
+    </script>
+
+</body>
+</html>

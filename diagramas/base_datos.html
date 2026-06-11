@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🛢️ Esquema de Base de Datos - Plataforma del Museo</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-dark: #08090f;
+            --bg-space: #0d0e17;
+            --bg-panel: rgba(15, 17, 34, 0.7);
+            --bg-card: rgba(26, 29, 56, 0.45);
+            --bg-card-hover: rgba(38, 43, 82, 0.65);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(255, 255, 255, 0.18);
+            
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            
+            --accent-emerald: 16, 185, 129;
+            --accent-blue: 59, 130, 246;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.08) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.05) 0px, transparent 50%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Navbar Coherente */
+        nav {
+            padding: 1.5rem 3rem;
+            border-bottom: 1px solid var(--border-color);
+            background: rgba(8, 9, 15, 0.7);
+            backdrop-filter: blur(12px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            text-decoration: none;
+            color: white;
+        }
+
+        .nav-logo-icon {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, rgb(168, 85, 247), rgb(59, 130, 246));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.3);
+        }
+
+        .nav-logo h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .nav-link {
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            border: 1px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.03);
+            border-color: var(--border-color);
+        }
+
+        .nav-link.active {
+            color: white;
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(59, 130, 246, 0.15));
+            border-color: rgba(168, 85, 247, 0.3);
+        }
+
+        /* Contenido Principal */
+        .content-container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 3rem 4rem 4rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2.5rem;
+        }
+
+        @media (max-width: 900px) {
+            .content-container {
+                padding: 2rem;
+            }
+        }
+
+        .header-section h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #ffffff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-section p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        /* Junior Explainer Corner */
+        .junior-corner {
+            background: rgba(16, 185, 129, 0.05);
+            border: 1px dashed rgba(16, 185, 129, 0.25);
+            border-radius: 16px;
+            padding: 1.8rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+
+        .explainer-topic h4 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1rem;
+            color: #34d399;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .explainer-topic p {
+            font-size: 0.82rem;
+            color: #a7f3d0;
+            line-height: 1.5;
+        }
+
+        /* Grid de Tablas */
+        .db-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2rem;
+        }
+
+        .db-table-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            padding: 1.8rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+        }
+
+        .db-table-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--border-hover);
+            background: var(--bg-card-hover);
+        }
+
+        .db-table-header {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.15rem;
+            font-weight: 700;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: #34d399;
+        }
+
+        .table-comment {
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        .db-table-fields {
+            margin-top: 1.2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+        }
+
+        .db-field {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.82rem;
+            padding: 0.15rem 0;
+        }
+
+        .field-name {
+            font-family: monospace;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .field-name.pk::before {
+            content: '🔑 ';
+        }
+
+        .field-name.fk::before {
+            content: '🔗 ';
+        }
+
+        .field-type {
+            font-family: monospace;
+            color: var(--text-secondary);
+            font-size: 0.78rem;
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <a href="index.html" class="nav-logo">
+            <div class="nav-logo-icon">🏛️</div>
+            <h1>Portal Junior del Museo</h1>
+        </a>
+        <div class="nav-links">
+            <a href="index.html" class="nav-link">🏠 Inicio</a>
+            <a href="arquitectura.html" class="nav-link">🗺️ Arquitectura</a>
+            <a href="base_datos.html" class="nav-link active">🛢️ Base de Datos</a>
+            <a href="flujo_datos.html" class="nav-link">🔄 Flujo de Datos</a>
+        </div>
+    </nav>
+
+    <div class="content-container">
+        <!-- Encabezado de la página -->
+        <div class="header-section">
+            <h2>🛢️ Modelo Físico de Base de Datos</h2>
+            <p>
+                Visualiza y aprende el funcionamiento de la persistencia de datos relacionales en MySQL declarada en el archivo SQL del proyecto.
+            </p>
+        </div>
+
+        <!-- Rincón Didáctico Junior -->
+        <div class="junior-corner">
+            <div class="explainer-topic">
+                <h4>🔑 Clave Primaria (Primary Key - PK)</h4>
+                <p>
+                    Es la columna que identifica de forma **única** a cada fila de una tabla. No se puede repetir y no puede ser vacía (nula). Ej: el campo <code>id</code> de la tabla de usuarios.
+                </p>
+            </div>
+            <div class="explainer-topic">
+                <h4>🔗 Clave Foránea (Foreign Key - FK)</h4>
+                <p>
+                    Es una columna que sirve para enlazar o **referenciar** un registro de otra tabla. Ej: el campo <code>created_by</code> en documentos apunta al ID del usuario que lo creó.
+                </p>
+            </div>
+            <div class="explainer-topic">
+                <h4>🚀 Relación Intermedia (Muchos a Muchos)</h4>
+                <p>
+                    Como un documento puede pertenecer a muchas colecciones y una colección tiene muchos documentos, creamos la tabla intermedia <code>collection_documents</code> que almacena pares de IDs.
+                </p>
+            </div>
+        </div>
+
+        <!-- Rejilla de Tablas -->
+        <div class="db-grid">
+            <!-- TABLA USERS -->
+            <div class="db-table-card">
+                <div class="db-table-header">
+                    <span>👤 users</span>
+                    <span class="table-comment">Cuentas y roles</span>
+                </div>
+                <div class="db-table-fields">
+                    <div class="db-field"><span class="field-name pk">id</span><span class="field-type">INT (AUTO_INC)</span></div>
+                    <div class="db-field"><span class="field-name">email</span><span class="field-type">VARCHAR(255) [UNIQUE]</span></div>
+                    <div class="db-field"><span class="field-name">password_hash</span><span class="field-type">VARCHAR(255)</span></div>
+                    <div class="db-field"><span class="field-name">nombre</span><span class="field-type">VARCHAR(255)</span></div>
+                    <div class="db-field"><span class="field-name">rol</span><span class="field-type">ENUM('investigador', 'invitado')</span></div>
+                    <div class="db-field"><span class="field-name">institucion</span><span class="field-type">VARCHAR(255)</span></div>
+                    <div class="db-field"><span class="field-name">google_id</span><span class="field-type">VARCHAR(255)</span></div>
+                    <div class="db-field"><span class="field-name">avatar_url</span><span class="field-type">VARCHAR(500)</span></div>
+                    <div class="db-field"><span class="field-name">is_active</span><span class="field-type">BOOLEAN (DEFAULT TRUE)</span></div>
+                    <div class="db-field"><span class="field-name">created_at</span><span class="field-type">DATETIME</span></div>
+                </div>
+            </div>
+
+            <!-- TABLA DOCUMENTS -->
+            <div class="db-table-card">
+                <div class="db-table-header">
+                    <span>📄 documents</span>
+                    <span class="table-comment">Hallazgos e imágenes</span>
+                </div>
+                <div class="db-table-fields">
+                    <div class="db-field"><span class="field-name pk">id</span><span class="field-type">INT (AUTO_INC)</span></div>
+                    <div class="db-field"><span class="field-name">titulo</span><span class="field-type">VARCHAR(255)</span></div>
+                    <div class="db-field"><span class="field-name">descripcion</span><span class="field-type">TEXT</span></div>
+                    <div class="db-field"><span class="field-name">autor</span><span class="field-type">VARCHAR(255)</span></div>
+                    <div class="db-field"><span class="field-name">file_path</span><span class="field-type">VARCHAR(500)</span></div>
+                    <div class="db-field"><span class="field-name">is_publico</span><span class="field-type">BOOLEAN</span></div>
+                    <div class="db-field"><span class="field-name fk">created_by</span><span class="field-type">INT (Ref: users.id)</span></div>
+                    <div class="db-field"><span class="field-name">visualizaciones</span><span class="field-type">INT (DEFAULT 0)</span></div>
+                    <div class="db-field"><span class="field-name">descargas</span><span class="field-type">INT (DEFAULT 0)</span></div>
+                    <div class="db-field"><span class="field-name">created_at</span><span class="field-type">DATETIME</span></div>
+                </div>
+            </div>
+
+            <!-- TABLA COLLECTIONS -->
+            <div class="db-table-card">
+                <div class="db-table-header">
+                    <span>🗂️ collections</span>
+                    <span class="table-comment">Álbumes temáticos</span>
+                </div>
+                <div class="db-table-fields">
+                    <div class="db-field"><span class="field-name pk">id</span><span class="field-type">INT (AUTO_INC)</span></div>
+                    <div class="db-field"><span class="field-name">titulo</span><span class="field-type">VARCHAR(255)</span></div>
+                    <div class="db-field"><span class="field-name">descripcion</span><span class="field-type">TEXT</span></div>
+                    <div class="db-field"><span class="field-name fk">created_by</span><span class="field-type">INT (Ref: users.id)</span></div>
+                    <div class="db-field"><span class="field-name">is_publica</span><span class="field-type">BOOLEAN</span></div>
+                    <div class="db-field"><span class="field-name">created_at</span><span class="field-type">DATETIME</span></div>
+                </div>
+            </div>
+
+            <!-- TABLA COLLECTION_DOCUMENTS -->
+            <div class="db-table-card">
+                <div class="db-table-header">
+                    <span>🔗 collection_documents</span>
+                    <span class="table-comment">Asociativa (M:N)</span>
+                </div>
+                <div class="db-table-fields">
+                    <div class="db-field"><span class="field-name pk fk">collection_id</span><span class="field-type">INT (Ref: collections.id)</span></div>
+                    <div class="db-field"><span class="field-name pk fk">document_id</span><span class="field-type">INT (Ref: documents.id)</span></div>
+                    <div class="db-field"><span class="field-name">added_at</span><span class="field-type">DATETIME</span></div>
+                </div>
+            </div>
+
+            <!-- TABLA COMMENTS -->
+            <div class="db-table-card">
+                <div class="db-table-header">
+                    <span>💬 comments</span>
+                    <span class="table-comment">Foros y respuestas</span>
+                </div>
+                <div class="db-table-fields">
+                    <div class="db-field"><span class="field-name pk">id</span><span class="field-type">INT (AUTO_INC)</span></div>
+                    <div class="db-field"><span class="field-name">contenido</span><span class="field-type">TEXT</span></div>
+                    <div class="db-field"><span class="field-name fk">user_id</span><span class="field-type">INT (Ref: users.id)</span></div>
+                    <div class="db-field"><span class="field-name">item_type</span><span class="field-type">ENUM('documento', 'coleccion')</span></div>
+                    <div class="db-field"><span class="field-name">item_id</span><span class="field-type">INT</span></div>
+                    <div class="db-field"><span class="field-name fk">parent_comment_id</span><span class="field-type">INT (Ref: self.id)</span></div>
+                    <div class="db-field"><span class="field-name">likes</span><span class="field-type">INT (DEFAULT 0)</span></div>
+                    <div class="db-field"><span class="field-name">created_at</span><span class="field-type">DATETIME</span></div>
+                </div>
+            </div>
+
+            <!-- TABLA TAGS -->
+            <div class="db-table-card">
+                <div class="db-table-header">
+                    <span>🏷️ tags</span>
+                    <span class="table-comment">Etiquetas descriptivas</span>
+                </div>
+                <div class="db-table-fields">
+                    <div class="db-field"><span class="field-name pk">id</span><span class="field-type">INT (AUTO_INC)</span></div>
+                    <div class="db-field"><span class="field-name">nombre</span><span class="field-type">VARCHAR(100) [UNIQUE]</span></div>
+                    <div class="db-field"><span class="field-name">created_at</span><span class="field-type">DATETIME</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

@@ -11,6 +11,7 @@ import RegisterPage from './pages/RegisterPage';
 import DocumentsPage from './pages/DocumentsPage';
 import DocumentDetailPage from './pages/DocumentDetailPage';
 import NewDocumentPage from './pages/NewDocumentPage';
+import EditDocumentPage from './pages/EditDocumentPage';
 import CollectionsPage from './pages/CollectionsPage';
 import CollectionDetailPage from './pages/CollectionDetailPage';
 import NewCollectionPage from './pages/NewCollectionPage';
@@ -35,6 +36,7 @@ function App() {
               <Route path="/docs" element={<Layout showSidebar={false}><DocumentsPage /></Layout>} />
               <Route path="/docs/new" element={<ResearcherGuard><Layout showSidebar={false}><NewDocumentPage /></Layout></ResearcherGuard>} />
               <Route path="/docs/:id" element={<Layout showSidebar={false}><DocumentDetailPage /></Layout>} />
+              <Route path="/docs/:id/edit" element={<ResearcherGuard><Layout showSidebar={false}><EditDocumentPage /></Layout></ResearcherGuard>} />
               <Route path="/cols" element={<Layout showSidebar={false}><CollectionsPage /></Layout>} />
               <Route path="/cols/new" element={<ResearcherGuard><Layout showSidebar={false}><NewCollectionPage /></Layout></ResearcherGuard>} />
               <Route path="/cols/:id" element={<Layout showSidebar={false}><CollectionDetailPage /></Layout>} />

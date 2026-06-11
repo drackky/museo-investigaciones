@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔄 Flujo de Peticiones y Datos - Plataforma del Museo</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-dark: #08090f;
+            --bg-space: #0d0e17;
+            --bg-panel: rgba(15, 17, 34, 0.7);
+            --bg-card: rgba(26, 29, 56, 0.45);
+            --bg-card-hover: rgba(38, 43, 82, 0.65);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(255, 255, 255, 0.18);
+            
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            
+            --accent-blue: 59, 130, 246;
+            --accent-purple: 168, 85, 247;
+            --accent-emerald: 16, 185, 129;
+            --accent-rose: 244, 63, 94;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.08) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.05) 0px, transparent 50%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Navbar Coherente */
+        nav {
+            padding: 1.5rem 3rem;
+            border-bottom: 1px solid var(--border-color);
+            background: rgba(8, 9, 15, 0.7);
+            backdrop-filter: blur(12px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            text-decoration: none;
+            color: white;
+        }
+
+        .nav-logo-icon {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, rgb(168, 85, 247), rgb(59, 130, 246));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.3);
+        }
+
+        .nav-logo h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .nav-link {
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            border: 1px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.03);
+            border-color: var(--border-color);
+        }
+
+        .nav-link.active {
+            color: white;
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(59, 130, 246, 0.15));
+            border-color: rgba(168, 85, 247, 0.3);
+        }
+
+        /* Contenido Principal */
+        .content-container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 3rem 4rem 4rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2.5rem;
+        }
+
+        @media (max-width: 900px) {
+            .content-container {
+                padding: 2rem;
+            }
+        }
+
+        .header-section h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #ffffff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-section p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        /* Simulador Visual de Pasos */
+        .simulator-layout {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 3rem;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 2.5rem;
+            box-shadow: 0 4px 30px rgba(0,0,0,0.4);
+        }
+
+        @media (max-width: 900px) {
+            .simulator-layout {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+        }
+
+        /* Lienzo de Nodos */
+        .flow-canvas {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            height: 380px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 1rem;
+        }
+
+        .flow-node {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.8rem;
+            z-index: 5;
+            transition: all 0.3s ease;
+            opacity: 0.5;
+        }
+
+        .flow-node.active {
+            opacity: 1;
+            transform: scale(1.05);
+        }
+
+        .flow-node-circle {
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .flow-node.active .flow-node-circle {
+            border-color: rgba(var(--node-color), 0.8);
+            box-shadow: 0 0 20px rgba(var(--node-color), 0.3);
+            background: rgba(var(--node-color), 0.15);
+        }
+
+        .flow-node-name {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        /* Burbuja de Datos Viajera (El "Paquete" HTTP) */
+        .data-bubble {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #f43f5e;
+            border-radius: 50%;
+            box-shadow: 0 0 15px #f43f5e;
+            z-index: 10;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+            transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        /* Líneas de Conexión Internas */
+        .flow-bg-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Panel de Control y Explicaciones */
+        .simulator-controls {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 1.5rem;
+        }
+
+        .step-display {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: #f43f5e;
+            background: rgba(244, 63, 94, 0.1);
+            border: 1px solid rgba(244, 63, 94, 0.25);
+            padding: 0.25rem 0.6rem;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .step-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-top: 0.5rem;
+        }
+
+        .step-description {
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            min-height: 120px;
+        }
+
+        .junior-explain-box {
+            background: rgba(59, 130, 246, 0.05);
+            border: 1px dashed rgba(59, 130, 246, 0.25);
+            border-radius: 12px;
+            padding: 1rem;
+            font-size: 0.8rem;
+            line-height: 1.5;
+            color: #bfdbfe;
+        }
+
+        .junior-explain-box strong {
+            color: #60a5fa;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .btn-controls-row {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .btn-sim {
+            flex-grow: 1;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: white;
+            padding: 0.75rem;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-sim:hover:not(:disabled) {
+            background: var(--bg-card-hover);
+            border-color: var(--border-hover);
+        }
+
+        .btn-sim:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .btn-sim-primary {
+            background: linear-gradient(135deg, rgb(168, 85, 247), rgb(59, 130, 246));
+            border: none;
+        }
+
+        .btn-sim-primary:hover:not(:disabled) {
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.3);
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <a href="index.html" class="nav-logo">
+            <div class="nav-logo-icon">🏛️</div>
+            <h1>Portal Junior del Museo</h1>
+        </a>
+        <div class="nav-links">
+            <a href="index.html" class="nav-link">🏠 Inicio</a>
+            <a href="arquitectura.html" class="nav-link">🗺️ Arquitectura</a>
+            <a href="base_datos.html" class="nav-link">🛢️ Base de Datos</a>
+            <a href="flujo_datos.html" class="nav-link active">🔄 Flujo de Datos</a>
+        </div>
+    </nav>
+
+    <div class="content-container">
+        <!-- Encabezado -->
+        <div class="header-section">
+            <h2>🔄 Flujo de Peticiones e Interacciones</h2>
+            <p>
+                Utiliza el simulador interactivo para visualizar cómo viaja un paquete de datos (Request) a través del API Gateway y los microservicios en un escenario común: **Crear una Colección de Investigación**.
+            </p>
+        </div>
+
+        <!-- Layout del Simulador -->
+        <div class="simulator-layout">
+            <!-- Lienzo Gráfico (Izquierda) -->
+            <div class="flow-canvas" id="canvas-container">
+                <svg class="flow-bg-lines" viewBox="0 0 500 380" width="100%" height="100%">
+                    <!-- Líneas conectoras horizontales fijas -->
+                    <line x1="80" y1="190" x2="190" y2="190" stroke="rgba(255,255,255,0.06)" stroke-width="2.5" />
+                    <line x1="250" y1="190" x2="310" y2="100" stroke="rgba(255,255,255,0.06)" stroke-width="2.5" />
+                    <line x1="250" y1="190" x2="310" y2="280" stroke="rgba(255,255,255,0.06)" stroke-width="2.5" />
+                    <line x1="370" y1="280" x2="420" y2="190" stroke="rgba(255,255,255,0.06)" stroke-width="2.5" />
+                </svg>
+
+                <!-- Burbuja de datos interactiva -->
+                <div class="data-bubble" id="bubble"></div>
+
+                <!-- Nodo 1: Frontend -->
+                <div class="flow-node active" id="node-front" style="--node-color: var(--accent-blue);">
+                    <div class="flow-node-circle">💻</div>
+                    <span class="flow-node-name">Frontend</span>
+                </div>
+
+                <!-- Nodo 2: API Gateway -->
+                <div class="flow-node" id="node-gw" style="--node-color: var(--accent-purple);">
+                    <div class="flow-node-circle">🛡️</div>
+                    <span class="flow-node-name">API Gateway</span>
+                </div>
+
+                <!-- Contenedor vertical de Microservicios -->
+                <div style="display: flex; flex-direction: column; justify-content: space-around; height: 100%; z-index: 5;">
+                    <!-- Nodo 3A: Auth Service -->
+                    <div class="flow-node" id="node-auth" style="--node-color: var(--accent-rose);">
+                        <div class="flow-node-circle">🔐</div>
+                        <span class="flow-node-name">Auth Service</span>
+                    </div>
+                    <!-- Nodo 3B: Collections Service -->
+                    <div class="flow-node" id="node-col" style="--node-color: var(--accent-emerald);">
+                        <div class="flow-node-circle">🗂️</div>
+                        <span class="flow-node-name">Collections Service</span>
+                    </div>
+                </div>
+
+                <!-- Nodo 4: MySQL Database -->
+                <div class="flow-node" id="node-db" style="--node-color: var(--accent-blue);">
+                    <div class="flow-node-circle">🛢️</div>
+                    <span class="flow-node-name">MySQL DB</span>
+                </div>
+            </div>
+
+            <!-- Panel de Control (Derecha) -->
+            <div class="simulator-controls">
+                <div>
+                    <span class="step-display" id="step-badge">Paso 1 / 5</span>
+                    <h3 class="step-title" id="step-title">El Usuario Pulsa "Crear Colección"</h3>
+                    <p class="step-description" id="step-desc" style="margin-top: 1rem;">
+                        El investigador pulsa el botón en su pantalla. El Frontend de React recolecta el título de la colección e inyecta la credencial del usuario (el Token JWT) en los encabezados HTTP antes de disparar la solicitud.
+                    </p>
+                </div>
+
+                <div class="junior-explain-box">
+                    <p id="step-junior-explain">
+                        <strong>💡 Junior Tip:</strong> Cuando realizamos operaciones privadas (como escribir en BD), es obligatorio enviar un 'pase' que demuestre quiénes somos. Esto se envía en una cabecera especial llamada <code>Authorization: Bearer [TOKEN]</code>.
+                    </p>
+                </div>
+
+                <div class="btn-controls-row">
+                    <button class="btn-sim" id="btn-prev" onclick="changeStep(-1)" disabled>◀️ Anterior</button>
+                    <button class="btn-sim btn-sim-primary" id="btn-next" onclick="changeStep(1)">Siguiente Paso ▶️</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const steps = [
+            {
+                badge: "Paso 1 / 5",
+                title: "1. El Frontend envía la petición",
+                desc: "El investigador rellena el formulario de la colección y presiona 'Guardar'. El Frontend en React recolecta el título y añade el Token JWT de la sesión en los encabezados de cabecera HTTP de la petición, enviándola a la dirección central del API Gateway (http://localhost:5000/api/v1/collections).",
+                junior: "<strong>💡 Junior Tip:</strong> Una petición HTTP está compuesta por un Método (POST), una URL (dirección), un Cuerpo (los datos en JSON) y Encabezados (metadatos como el Token JWT que valida la sesión).",
+                node: "front",
+                bubblePos: { left: "12%", top: "50%" }
+            },
+            {
+                badge: "Paso 2 / 5",
+                title: "2. El API Gateway intercepta y valida",
+                desc: "La petición llega al API Gateway (Puerto 5000). El Gateway detecta que el endpoint '/collections' es una zona protegida y requiere verificación. Extrae el Token JWT de los encabezados y hace una consulta interna rápida al Auth Service (Puerto 5001) para comprobar si es válido.",
+                junior: "<strong>💡 Junior Tip:</strong> El Gateway nunca descifra las contraseñas ni valida sesiones directamente. En su lugar, delega la verificación al Auth Service porque en la filosofía de microservicios cada componente tiene una sola función específica.",
+                node: "gw",
+                bubblePos: { left: "37%", top: "50%" }
+            },
+            {
+                badge: "Paso 3 / 5",
+                title: "3. El Auth Service confirma la identidad",
+                desc: "El Auth Service (Puerto 5001) recibe la clave del token, verifica que la firma criptográfica con la frase secreta de la app coincida y que no esté expirado. Si el token está en orden, responde al Gateway: 'Confirmado, el token es válido y pertenece al Usuario con ID 8'.",
+                junior: "<strong>💡 Junior Tip:</strong> El token JWT está firmado con un algoritmo simétrico (HS256). Solo quien tenga el JWT_SECRET_KEY del servidor puede validar y descifrar el contenido del token de forma confiable.",
+                node: "auth",
+                bubblePos: { left: "62%", top: "25%" }
+            },
+            {
+                badge: "Paso 4 / 5",
+                title: "4. Ruteo hacia el Collections Service y DB",
+                desc: "Al recibir luz verde del Auth Service, el Gateway desvía finalmente la petición original inyectándole el ID del usuario verificado al Collections Service (Puerto 5003). Este servicio recibe los datos y genera una consulta SQL (INSERT) a MySQL (Puerto 3306) para almacenar la colección.",
+                junior: "<strong>💡 Junior Tip:</strong> Al inyectar el ID de usuario verificado en la petición, el Collections Service puede registrar de forma transparente y segura quién es el propietario de la nueva colección en la base de datos.",
+                node: "col",
+                bubblePos: { left: "62%", top: "72%" }
+            },
+            {
+                badge: "Paso 5 / 5",
+                title: "5. Almacenamiento en MySQL y respuesta exitosa",
+                desc: "La base de datos MySQL escribe físicamente el nuevo registro en la tabla de colecciones y devuelve confirmación exitosa. El Collections Service le responde al Gateway, y el Gateway le devuelve al Frontend un código HTTP '201 Created' y la colección en JSON. ¡El navegador del usuario muestra la colección en pantalla!",
+                junior: "<strong>💡 Junior Tip:</strong> El código HTTP '210' no existe, para creación exitosa usamos el código estándar '201 Created'. El Frontend al recibir este código limpia el formulario y actualiza la lista en pantalla.",
+                node: "db",
+                bubblePos: { left: "88%", top: "50%" }
+            }
+        ];
+
+        let currentStep = 0;
+
+        function updateSimulator() {
+            const step = steps[currentStep];
+
+            // Actualizar textos
+            document.getElementById("step-badge").innerText = step.badge;
+            document.getElementById("step-title").innerText = step.title;
+            document.getElementById("step-desc").innerHTML = step.desc;
+            document.getElementById("step-junior-explain").innerHTML = step.junior;
+
+            // Actualizar nodos activos (Opacidad)
+            document.querySelectorAll(".flow-node").forEach(node => node.classList.remove("active"));
+            
+            // Si el paso actual activa un nodo concreto
+            const activeNodeId = `node-${step.node}`;
+            document.getElementById(activeNodeId).classList.add("active");
+
+            // Mover la burbuja de datos
+            const bubble = document.getElementById("bubble");
+            bubble.style.display = "block";
+            bubble.style.left = step.bubblePos.left;
+            bubble.style.top = step.bubblePos.top;
+
+            // Habilitar/Deshabilitar botones
+            document.getElementById("btn-prev").disabled = currentStep === 0;
+            document.getElementById("btn-next").disabled = currentStep === steps.length - 1;
+        }
+
+        function changeStep(direction) {
+            currentStep += direction;
+            if (currentStep < 0) currentStep = 0;
+            if (currentStep >= steps.length) currentStep = steps.length - 1;
+            updateSimulator();
+        }
+
+        // Iniciar en el paso 1 al cargar
+        window.onload = function() {
+            updateSimulator();
+        };
+    </script>
+</body>
+</html>

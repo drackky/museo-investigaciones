@@ -79,6 +79,7 @@ class User(db.Model):
             'email': self.email,
             'nombre': self.nombre,
             'rol': self.rol,
+            'tipo': self.rol,
             'institucion': self.institucion,
             'avatar_url': self.avatar_url,
             'is_active': self.is_active,

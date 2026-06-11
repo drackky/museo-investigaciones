@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏛️ Portal del Desarrollador Junior - Plataforma del Museo</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-dark: #08090f;
+            --bg-space: #0d0e17;
+            --bg-panel: rgba(15, 17, 34, 0.7);
+            --bg-card: rgba(26, 29, 56, 0.45);
+            --bg-card-hover: rgba(38, 43, 82, 0.65);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(255, 255, 255, 0.18);
+            
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            
+            --accent-purple: 168, 85, 247;
+            --accent-blue: 59, 130, 246;
+            --accent-emerald: 16, 185, 129;
+            --accent-rose: 244, 63, 94;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(168, 85, 247, 0.1) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.08) 0px, transparent 50%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Navbar Coherente */
+        nav {
+            padding: 1.5rem 3rem;
+            border-bottom: 1px solid var(--border-color);
+            background: rgba(8, 9, 15, 0.7);
+            backdrop-filter: blur(12px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            text-decoration: none;
+            color: white;
+        }
+
+        .nav-logo-icon {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, rgb(168, 85, 247), rgb(59, 130, 246));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.3);
+        }
+
+        .nav-logo h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .nav-link {
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            border: 1px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.03);
+            border-color: var(--border-color);
+        }
+
+        .nav-link.active {
+            color: white;
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(59, 130, 246, 0.15));
+            border-color: rgba(168, 85, 247, 0.3);
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 5rem 3rem 3rem;
+            text-align: center;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .badge-junior {
+            background: rgba(16, 185, 129, 0.1);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            display: inline-block;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2.8rem;
+            font-weight: 700;
+            line-height: 1.2;
+            letter-spacing: -1px;
+            margin-bottom: 1.2rem;
+            background: linear-gradient(to right, #ffffff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: 1.05rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+
+        /* Grid de Tarjetas de Diagrama */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            padding: 0 4rem 4rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .diagram-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 2.2rem;
+            text-decoration: none;
+            color: var(--text-primary);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .diagram-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(to right, rgb(var(--accent)), rgb(59, 130, 246));
+            opacity: 0.6;
+            transition: opacity 0.3s ease;
+        }
+
+        .diagram-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--border-hover);
+            background: var(--bg-card-hover);
+            box-shadow: 0 10px 40px rgba(var(--accent), 0.12);
+        }
+
+        .diagram-card:hover::before {
+            opacity: 1;
+        }
+
+        .card-icon {
+            font-size: 2.2rem;
+            width: 60px;
+            height: 60px;
+            background: rgba(var(--accent), 0.1);
+            border: 1px solid rgba(var(--accent), 0.2);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgb(var(--accent));
+        }
+
+        .diagram-card h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .diagram-card p {
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            flex-grow: 1;
+        }
+
+        .card-action {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: rgb(var(--accent));
+            margin-top: 0.5rem;
+            transition: gap 0.2s ease;
+        }
+
+        .diagram-card:hover .card-action {
+            gap: 0.8rem;
+        }
+
+        /* Sección didáctica */
+        .info-section {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            margin: 0 4rem 4rem;
+            padding: 3rem;
+            max-width: 1200px;
+            width: calc(100% - 8rem);
+            align-self: center;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+        }
+
+        @media (max-width: 900px) {
+            .info-section {
+                grid-template-columns: 1fr;
+                margin: 0 2rem 2rem;
+                width: calc(100% - 4rem);
+                padding: 2rem;
+            }
+            .cards-grid {
+                padding: 0 2rem 2rem;
+            }
+        }
+
+        .info-col h4 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            color: #38bdf8;
+        }
+
+        .info-col p {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 1.2rem;
+        }
+
+        .info-col ul {
+            list-style-position: inside;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+        }
+
+        .info-col strong {
+            color: var(--text-primary);
+        }
+
+        footer {
+            margin-top: auto;
+            padding: 2rem;
+            text-align: center;
+            border-top: 1px solid var(--border-color);
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            background: rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <a href="index.html" class="nav-logo">
+            <div class="nav-logo-icon">🏛️</div>
+            <h1>Portal Junior del Museo</h1>
+        </a>
+        <div class="nav-links">
+            <a href="index.html" class="nav-link active">🏠 Inicio</a>
+            <a href="arquitectura.html" class="nav-link">🗺️ Arquitectura</a>
+            <a href="base_datos.html" class="nav-link">🛢️ Base de Datos</a>
+            <a href="flujo_datos.html" class="nav-link">🔄 Flujo de Datos</a>
+        </div>
+    </nav>
+
+    <div class="hero">
+        <div class="badge-junior">Guía Didáctica & Visual</div>
+        <h2>Aprende la Arquitectura del Sistema</h2>
+        <p>
+            ¡Bienvenido al portal educativo de la plataforma del museo! Esta serie de diagramas interactivos de nivel 
+            <strong>desarrollador junior</strong> te guiarán paso a paso sobre cómo se interconectan los componentes, cómo se almacenan las tablas 
+            y cómo viajan los datos a través de tus microservicios de forma sencilla y clara.
+        </p>
+    </div>
+
+    <!-- TARJETAS CON ACCESO A LOS DIAGRAMAS -->
+    <div class="cards-grid">
+        <!-- DIAGRAMA 1 -->
+        <a href="arquitectura.html" class="diagram-card" style="--accent: var(--accent-purple);">
+            <div class="card-icon">🗺️</div>
+            <h3>Mapa de Arquitectura</h3>
+            <p>
+                Visualiza cómo el API Gateway (puerto 5000) centraliza las llamadas web y las distribuye inteligentemente hacia los 5 microservicios internos que operan en puertos dedicados.
+            </p>
+            <div class="card-action">Explorar Arquitectura ➔</div>
+        </a>
+
+        <!-- DIAGRAMA 2 -->
+        <a href="base_datos.html" class="diagram-card" style="--accent: var(--accent-emerald);">
+            <div class="card-icon">🛢️</div>
+            <h3>Esquema de Base de Datos</h3>
+            <p>
+                Aprende cómo se estructuran las tablas físicas de MySQL, qué significan las Claves Primarias y Foráneas, y cómo se relacionan los usuarios con sus documentos y colecciones.
+            </p>
+            <div class="card-action">Explorar Base de Datos ➔</div>
+        </a>
+
+        <!-- DIAGRAMA 3 -->
+        <a href="flujo_datos.html" class="diagram-card" style="--accent: var(--accent-blue);">
+            <div class="card-icon">🔄</div>
+            <h3>Flujo de Datos y Peticiones</h3>
+            <p>
+                Sigue la ruta exacta que recorre una petición web paso a paso: desde que el usuario pulsa un botón en el Frontend, pasando por la validación de seguridad de tokens, hasta llegar a la DB.
+            </p>
+            <div class="card-action">Ver Flujo de Datos ➔</div>
+        </a>
+    </div>
+
+    <!-- SECCIÓN DE CONCEPTOS JUNIOR -->
+    <div class="info-section">
+        <div class="info-col">
+            <h4>💡 ¿Qué es un Microservicio?</h4>
+            <p>
+                En lugar de escribir todo el código en un único programa gigante (llamado monolito), dividimos el sistema en <strong>programas pequeños e independientes</strong> llamados microservicios. Cada uno tiene una única responsabilidad:
+            </p>
+            <ul>
+                <li><strong>Auth Service:</strong> Únicamente registra usuarios y gestiona contraseñas.</li>
+                <li><strong>Documents Service:</strong> Solo manipula metadatos y etiquetas de archivos.</li>
+                <li><strong>Collections Service:</strong> Organiza grupos o carpetas de documentos.</li>
+            </ul>
+        </div>
+        <div class="info-col">
+            <h4>🔑 ¿Por qué usamos un API Gateway?</h4>
+            <p>
+                El <strong>API Gateway</strong> es el vigilante en la puerta de entrada. En lugar de que el Frontend tenga que recordar en qué puerto corre cada servicio (5001, 5002, etc.), el Frontend solo le hace peticiones al Gateway (puerto 5000). El Gateway se encarga de:
+            </p>
+            <ul>
+                <li><strong>Ruteo Inteligente:</strong> Desvía la petición al servicio interno correspondiente.</li>
+                <li><strong>Seguridad Unificada:</strong> Evita problemas con políticas de CORS del navegador.</li>
+                <li><strong>Filtro de Seguridad:</strong> Oculta la red interna de microservicios al exterior.</li>
+            </ul>
+        </div>
+    </div>
+
+    <footer>
+        Diseñado con fines pedagógicos para Desarrolladores Junior de la Plataforma del Museo de Arqueología © 2026.
+    </footer>
+
+</body>
+</html>

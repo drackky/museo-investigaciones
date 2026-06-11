@@ -476,7 +476,7 @@ const loadDocumentInteractions = async () => {
               </div>
 
               <div className="admin-actions">
-                {isAuthenticated && isResearcher() && (
+                {isAuthenticated && isResearcher() && document.autor_id === (user?.id || user?.user_id) && (
                   <>
                     <Link 
                       to={`/docs/${document.id}/edit`}

@@ -35,12 +35,14 @@ export const AuthProvider = ({ children }) => {
           localStorage.removeItem('token');
           localStorage.removeItem('user_data');
         }
-      } catch {
-        localStorage.removeItem('token');
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('user_data');
-        setUser(null);
-        setIsAuthenticated(false);
+      } catch (error) {
+        if (error.response?.status === 401) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('user_data');
+          setUser(null);
+          setIsAuthenticated(false);
+        }
       } finally {
         setIsLoading(false);
       }
