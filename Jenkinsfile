@@ -44,9 +44,10 @@ pipeline {
 }
 
         stage('Run Tests') {
-            steps {
-                bat '%VENV%\\Scripts\\pytest "pruebas de caja blanca\\test_caja_blanca.py" "pruebas de caja negra\\test_caja_negra.py" --junitxml=reporte_junit.xml --html=reporte_pruebas.html --self-contained-html -v'
-            }
+stage('Run Tests') {
+    steps {
+        bat '%VENV%\\Scripts\\pytest test_museo.py "pruebas de caja blanca\\test_caja_blanca.py" "pruebas de caja negra\\test_caja_negra.py" --junitxml=reporte_junit.xml --html=reporte_pruebas.html --self-contained-html -v'
+    }
             post {
                 always {
                     junit 'reporte_junit.xml'
