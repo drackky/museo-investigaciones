@@ -30,59 +30,18 @@ pipeline {
             }
         }
 
-        stage('Install Dependencies') {
-            parallel {
-                stage('API Gateway') {
-                    steps {
-                        dir('api-gateway') {
-                            bat '%VENV%\\Scripts\\pip install -r requirements.txt'
-                        }
-                    }
-                }
-                stage('Auth Service') {
-                    steps {
-                        dir('auth-service') {
-                            bat '%VENV%\\Scripts\\pip install -r requirements.txt'
-                        }
-                    }
-                }
-                stage('Documents Service') {
-                    steps {
-                        dir('documents-service') {
-                            bat '%VENV%\\Scripts\\pip install -r requirements.txt'
-                        }
-                    }
-                }
-                stage('Collections Service') {
-                    steps {
-                        dir('collections-service') {
-                            bat '%VENV%\\Scripts\\pip install -r requirements.txt'
-                        }
-                    }
-                }
-                stage('Comments Service') {
-                    steps {
-                        dir('comments-service') {
-                            bat '%VENV%\\Scripts\\pip install -r requirements.txt'
-                        }
-                    }
-                }
-                stage('Research Service') {
-                    steps {
-                        dir('research-service') {
-                            bat '%VENV%\\Scripts\\pip install -r requirements.txt'
-                        }
-                    }
-                }
-                stage('Frontend') {
-                    steps {
-                        dir('frontend') {
-                            bat 'npm install'
-                        }
-                    }
-                }
-            }
+       stage('Install Dependencies') {
+    steps {
+        bat '%VENV%\\Scripts\\pip install -r api-gateway\\requirements.txt'
+        bat '%VENV%\\Scripts\\pip install -r auth-service\\requirements.txt'
+        bat '%VENV%\\Scripts\\pip install -r comments-service\\requirements.txt'
+        bat '%VENV%\\Scripts\\pip install -r research-service\\requirements.txt'
+        bat '%VENV%\\Scripts\\pip install flask flask-sqlalchemy flask-cors pymysql python-dotenv pyjwt cryptography requests werkzeug pillow python-magic-bin pypdf2 gunicorn marshmallow flask-bcrypt google-auth google-auth-oauthlib bleach flask-limiter'
+        dir('frontend') {
+            bat 'npm install'
         }
+    }
+}
 
         stage('Run Tests') {
             steps {
