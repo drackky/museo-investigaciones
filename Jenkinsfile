@@ -30,24 +30,23 @@ pipeline {
             }
         }
 
-       stage('Install Dependencies') {
-    steps {
-        bat '%VENV%\\Scripts\\pip install -r api-gateway\\requirements.txt'
-        bat '%VENV%\\Scripts\\pip install -r auth-service\\requirements.txt'
-        bat '%VENV%\\Scripts\\pip install -r comments-service\\requirements.txt'
-        bat '%VENV%\\Scripts\\pip install -r research-service\\requirements.txt'
-        bat '%VENV%\\Scripts\\pip install flask flask-sqlalchemy flask-cors pymysql python-dotenv pyjwt cryptography requests werkzeug pillow python-magic-bin pypdf2 gunicorn marshmallow flask-bcrypt google-auth google-auth-oauthlib bleach flask-limiter'
-        dir('frontend') {
-            bat 'npm install'
+        stage('Install Dependencies') {
+            steps {
+                bat '%VENV%\\Scripts\\pip install -r api-gateway\\requirements.txt'
+                bat '%VENV%\\Scripts\\pip install -r auth-service\\requirements.txt'
+                bat '%VENV%\\Scripts\\pip install -r comments-service\\requirements.txt'
+                bat '%VENV%\\Scripts\\pip install -r research-service\\requirements.txt'
+                bat '%VENV%\\Scripts\\pip install pillow python-magic-bin pypdf2 google-auth google-auth-oauthlib flask-bcrypt bleach'
+                dir('frontend') {
+                    bat 'npm install'
+                }
+            }
         }
-    }
-}
 
         stage('Run Tests') {
-stage('Run Tests') {
-    steps {
-        bat '%VENV%\\Scripts\\pytest test_museo.py "pruebas de caja blanca\\test_caja_blanca.py" "pruebas de caja negra\\test_caja_negra.py" --junitxml=reporte_junit.xml --html=reporte_pruebas.html --self-contained-html -v'
-    }
+            steps {
+                bat '%VENV%\\Scripts\\pytest test_museo.py "pruebas de caja blanca\\test_caja_blanca.py" "pruebas de caja negra\\test_caja_negra.py" --junitxml=reporte_junit.xml --html=reporte_pruebas.html --self-contained-html -v'
+            }
             post {
                 always {
                     junit 'reporte_junit.xml'
@@ -84,5 +83,4 @@ stage('Run Tests') {
             echo 'Build fallido'
         }
     }
-}
 }
