@@ -25,7 +25,7 @@ pipeline {
         stage('Setup Python') {
             steps {
                 bat 'python -m venv %VENV%'
-                bat '%VENV%\\Scripts\\pip install --upgrade pip'
+                bat '%VENV%\\Scripts\\python -m pip install --upgrade pip'
                 bat '%VENV%\\Scripts\\pip install wheel setuptools pytest-html'
             }
         }
@@ -121,12 +121,7 @@ pipeline {
             archiveArtifacts artifacts: 'frontend/dist/**', fingerprint: true
             echo 'Build completado exitosamente'
         }
-        failure {
-            emailext(
-                to: 'team@museo.edu',
-                subject: "Build fallido: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: "El build ha fallado.\n\nRevisa los detalles en: ${env.BUILD_URL}\n\nChangeset: ${env.CHANGE_ID ?: 'N/A'}"
-            )
-        }
-    }
+failure {
+    echo 'Build fallido'
+}
 }
