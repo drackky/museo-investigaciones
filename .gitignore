@@ -1,8 +1,11 @@
 ﻿.venv/
 __pycache__/
 *.pyc
-.env
+
 *.log
 uploads/
 node_modules/
 frontend/.next/
+
+# Environment variables (contiene secretos)
+.env
