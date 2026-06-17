@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏛️ Portal de Arquitectura e Interactivo del Museo</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-dark: #07080e;
+            --bg-space: #0b0c16;
+            --bg-panel: rgba(13, 15, 30, 0.7);
+            --bg-card: rgba(22, 25, 49, 0.45);
+            --bg-card-hover: rgba(35, 39, 74, 0.6);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(255, 255, 255, 0.15);
+            
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            
+            --gateway-glow: 168, 85, 247;
+            --auth-glow: 244, 63, 94;
+            --docs-glow: 59, 130, 246;
+            --col-glow: 16, 185, 129;
+            --comm-glow: 236, 72, 153;
+            --res-glow: 20, 184, 166;
+            --db-glow: 100, 116, 139;
+            --front-glow: 14, 165, 233;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(88, 28, 135, 0.12) 0px, transparent 50%),
+                radial-gradient(at 50% 0%, rgba(30, 58, 138, 0.1) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header Premium */
+        header {
+            padding: 1.5rem 3rem;
+            border-bottom: 1px solid var(--border-color);
+            background: rgba(7, 8, 14, 0.6);
+            backdrop-filter: blur(12px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .logo-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-icon {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, rgb(168, 85, 247), rgb(59, 130, 246));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
+        }
+
+        header h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(to right, #ffffff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        header p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--border-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(59, 130, 246, 0.25));
+            border-color: rgba(168, 85, 247, 0.4);
+        }
+
+        .btn-primary:hover {
+            border-color: rgba(168, 85, 247, 0.8);
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.2);
+        }
+
+        .btn-active {
+            background: linear-gradient(135deg, rgb(168, 85, 247), rgb(59, 130, 246));
+            border: none;
+            color: white;
+        }
+
+        /* Contenedor Principal */
+        main {
+            display: grid;
+            grid-template-columns: 1.4fr 1fr;
+            flex-grow: 1;
+            height: calc(100vh - 75px);
+            z-index: 1;
+        }
+
+        @media (max-width: 1200px) {
+            main {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+        }
+
+        /* Panel del Mapa del Diagrama */
+        .diagram-panel {
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-right: 1px solid var(--border-color);
+            position: relative;
+            background: rgba(11, 12, 22, 0.3);
+            overflow: auto;
+        }
+
+        .diagram-container {
+            width: 100%;
+            max-width: 800px;
+            aspect-ratio: 4/3;
+            position: relative;
+            user-select: none;
+        }
+
+        /* SVG de Flujo de Conexión */
+        .svg-connections {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .connection-line {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.1);
+            stroke-width: 2.5;
+            transition: all 0.5s ease;
+        }
+
+        .connection-line.active {
+            stroke-width: 3.5;
+        }
+
+        /* Efecto de partículas viajando por el cable */
+        .line-flow {
+            stroke-dasharray: 10, 20;
+            animation: dash 1s linear infinite;
+            stroke-width: 2.5;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .line-flow.active {
+            opacity: 1;
+        }
+
+        @keyframes dash {
+            to {
+                stroke-dashoffset: -30;
+            }
+        }
+
+        /* Nodo en el Canvas */
+        .node-card {
+            position: absolute;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1rem 1.25rem;
+            color: var(--text-primary);
+            cursor: pointer;
+            z-index: 2;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(12px);
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        }
+
+        .node-card:hover {
+            transform: scale(1.04) translateY(-3px);
+            border-color: var(--border-hover);
+            background: var(--bg-card-hover);
+        }
+
+        .node-card.selected {
+            border-width: 1.5px;
+            background: rgba(25, 28, 55, 0.8);
+            box-shadow: 0 0 25px rgba(var(--card-glow), 0.25);
+            border-color: rgba(var(--card-glow), 0.7);
+        }
+
+        .node-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.15rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            color: rgba(var(--card-glow), 1);
+            box-shadow: inset 0 0 10px rgba(var(--card-glow), 0.1);
+        }
+
+        .node-info-text h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .node-info-text p {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 1px;
+        }
+
+        /* Posiciones fijas en el Canvas (Grid 12x12 conceptual) */
+        .node-front {
+            top: 40%;
+            left: 5%;
+            --card-glow: var(--front-glow);
+        }
+
+        .node-gateway {
+            top: 40%;
+            left: 36%;
+            --card-glow: var(--gateway-glow);
+            padding: 1.25rem 1.5rem;
+            border-radius: 20px;
+        }
+
+        /* Microservicios apilados verticalmente */
+        .node-service-auth {
+            top: 5%;
+            left: 68%;
+            --card-glow: var(--auth-glow);
+        }
+
+        .node-service-docs {
+            top: 22%;
+            left: 68%;
+            --card-glow: var(--docs-glow);
+        }
+
+        .node-service-col {
+            top: 40%;
+            left: 68%;
+            --card-glow: var(--col-glow);
+        }
+
+        .node-service-comm {
+            top: 58%;
+            left: 68%;
+            --card-glow: var(--comm-glow);
+        }
+
+        .node-service-res {
+            top: 75%;
+            left: 68%;
+            --card-glow: var(--res-glow);
+        }
+
+        /* Base de datos */
+        .node-db {
+            top: 78%;
+            left: 37%;
+            --card-glow: var(--db-glow);
+            border-radius: 50% / 15%;
+            height: 75px;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* Panel de Inspección del Lado Derecho */
+        .inspector-panel {
+            background: var(--bg-panel);
+            backdrop-filter: blur(20px);
+            border-left: 1px solid var(--border-color);
+            padding: 2.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.75rem;
+        }
+
+        .inspector-placeholder {
+            margin: auto;
+            text-align: center;
+            max-width: 320px;
+            color: var(--text-secondary);
+        }
+
+        .inspector-placeholder-icon {
+            font-size: 3rem;
+            margin-bottom: 1.2rem;
+            color: var(--text-muted);
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .inspector-placeholder h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .inspector-placeholder p {
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+
+        /* Detalles del Inspector */
+        .inspector-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1.5rem;
+        }
+
+        .inspector-badge {
+            background: rgba(var(--badge-color), 0.15);
+            color: rgb(var(--badge-color));
+            border: 1px solid rgba(var(--badge-color), 0.3);
+            padding: 0.25rem 0.65rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .inspector-title-area h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+
+        .inspector-title-area p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .inspector-section-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .inspector-section-title::after {
+            content: '';
+            flex-grow: 1;
+            height: 1px;
+            background: var(--border-color);
+        }
+
+        .inspector-card-meta {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .meta-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+        }
+
+        .meta-label {
+            color: var(--text-secondary);
+        }
+
+        .meta-value {
+            color: var(--text-primary);
+            font-weight: 500;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .meta-code {
+            font-family: monospace;
+            background: rgba(0,0,0,0.3);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .endpoint-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+            max-height: 250px;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+
+        .endpoint-item {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.65rem 0.85rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            transition: all 0.2s ease;
+        }
+
+        .endpoint-item:hover {
+            border-color: rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.02);
+        }
+
+        .endpoint-method {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            min-width: 50px;
+            text-align: center;
+        }
+
+        .method-get {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .method-post {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .method-put {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .method-delete {
+            background: rgba(244, 63, 94, 0.15);
+            color: #fb7185;
+            border: 1px solid rgba(244, 63, 94, 0.3);
+        }
+
+        .endpoint-path {
+            font-family: monospace;
+            color: var(--text-primary);
+            flex-grow: 1;
+            margin-left: 0.85rem;
+        }
+
+        .endpoint-target {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+        }
+
+        /* Pestaña de Esquema de Base de Datos y Secuencias */
+        .db-schema-panel {
+            padding: 2.5rem 3rem;
+            overflow-y: auto;
+            flex-grow: 1;
+            display: none;
+            flex-direction: column;
+            gap: 2rem;
+            background: rgba(11, 12, 22, 0.2);
+            height: calc(100vh - 75px);
+        }
+
+        .db-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .db-table-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .db-table-header {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            padding-bottom: 0.8rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            color: #10b981;
+        }
+
+        .db-table-fields {
+            margin-top: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .db-field {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            padding: 0.25rem 0;
+        }
+
+        .field-name {
+            font-family: monospace;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .field-name.pk::before {
+            content: '🔑 ';
+        }
+
+        .field-name.fk::before {
+            content: '🔗 ';
+        }
+
+        .field-type {
+            font-family: monospace;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-title">
+            <div class="logo-icon">🏛️</div>
+            <div>
+                <h1>Mapa Interactivo de Arquitectura</h1>
+                <p>Plataforma de Investigaciones del Museo de Historia y Arqueología</p>
+            </div>
+        </div>
+        <div class="header-controls">
+            <button class="btn btn-primary btn-active" id="btn-tab-arch" onclick="switchTab('arch')">🗺️ Arquitectura de Microservicios</button>
+            <button class="btn btn-primary" id="btn-tab-db" onclick="switchTab('db')">🛢️ Modelos y Esquema de Datos</button>
+            <button class="btn" id="btn-toggle-flow" onclick="toggleFlowAnimations()">⚡ Animar Flujos</button>
+        </div>
+    </header>
+
+    <!-- PESTAÑA 1: MAPA DE ARQUITECTURA -->
+    <main id="tab-arch-content">
+        <!-- Panel del Diagrama Visual (Lado Izquierdo) -->
+        <div class="diagram-panel">
+            <div class="diagram-container" id="canvas">
+                <!-- SVG para Cables de Conexión de Datos -->
+                <svg class="svg-connections" id="svg-canvas" viewBox="0 0 800 600" width="100%" height="100%">
+                    <defs>
+                        <!-- Filtro de resplandor para las líneas activas -->
+                        <filter id="glow-purple" x="-20%" y="-20%" width="140%" height="140%">
+                            <feGaussianBlur stdDeviation="6" result="blur" />
+                            <feMerge>
+                                <feMergeNode in="blur" />
+                                <feMergeNode in="SourceGraphic" />
+                            </feMerge>
+                        </filter>
+                    </defs>
+
+                    <!-- Cables base (Gris oscuro) -->
+                    <!-- Frontend -> Gateway -->
+                    <path d="M 180,265 L 290,265" class="connection-line" id="line-front-gw" />
+                    <!-- Gateway -> Auth Service -->
+                    <path d="M 430,265 L 500,265 L 500,60 L 550,60" class="connection-line" id="line-gw-auth" />
+                    <!-- Gateway -> Documents Service -->
+                    <path d="M 430,265 L 500,265 L 500,160 L 550,160" class="connection-line" id="line-gw-docs" />
+                    <!-- Gateway -> Collections Service -->
+                    <path d="M 430,265 L 550,265" class="connection-line" id="line-gw-col" />
+                    <!-- Gateway -> Comments Service -->
+                    <path d="M 430,265 L 500,265 L 500,370 L 550,370" class="connection-line" id="line-gw-comm" />
+                    <!-- Gateway -> Research Service -->
+                    <path d="M 430,265 L 500,265 L 500,470 L 550,470" class="connection-line" id="line-gw-res" />
+                    
+                    <!-- Cables de Microservicios hacia la Base de Datos -->
+                    <path d="M 720,70 L 780,70 L 780,530 L 410,530 L 410,480" class="connection-line" id="line-auth-db" />
+                    <path d="M 720,170 L 770,170 L 770,520 L 410,520 L 410,480" class="connection-line" id="line-docs-db" />
+                    <path d="M 720,270 L 760,270 L 760,510 L 410,510 L 410,480" class="connection-line" id="line-col-db" />
+                    <path d="M 720,380 L 750,380 L 750,500 L 410,500 L 410,480" class="connection-line" id="line-comm-db" />
+                    <path d="M 720,480 L 740,480 L 740,490 L 410,490 L 410,480" class="connection-line" id="line-res-db" />
+
+                    <!-- Partículas de flujo activas (Coloreadas) -->
+                    <path d="M 180,265 L 290,265" class="line-flow" id="flow-front-gw" stroke="rgb(14, 165, 233)" />
+                    <path d="M 430,265 L 500,265 L 500,60 L 550,60" class="line-flow" id="flow-gw-auth" stroke="rgb(244, 63, 94)" />
+                    <path d="M 430,265 L 500,265 L 500,160 L 550,160" class="line-flow" id="flow-gw-docs" stroke="rgb(59, 130, 246)" />
+                    <path d="M 430,265 L 550,265" class="line-flow" id="flow-gw-col" stroke="rgb(16, 185, 129)" />
+                    <path d="M 430,265 L 500,265 L 500,370 L 550,370" class="line-flow" id="flow-gw-comm" stroke="rgb(236, 72, 153)" />
+                    <path d="M 430,265 L 500,265 L 500,470 L 550,470" class="line-flow" id="flow-gw-res" stroke="rgb(20, 184, 166)" />
+
+                    <!-- Flujos Microservicios -> DB -->
+                    <path d="M 720,70 L 780,70 L 780,530 L 410,530 L 410,480" class="line-flow" id="flow-auth-db" stroke="rgb(244, 63, 94)" />
+                    <path d="M 720,170 L 770,170 L 770,520 L 410,520 L 410,480" class="line-flow" id="flow-docs-db" stroke="rgb(59, 130, 246)" />
+                    <path d="M 720,270 L 760,270 L 760,510 L 410,510 L 410,480" class="line-flow" id="flow-col-db" stroke="rgb(16, 185, 129)" />
+                    <path d="M 720,380 L 750,380 L 750,500 L 410,500 L 410,480" class="line-flow" id="flow-comm-db" stroke="rgb(236, 72, 153)" />
+                    <path d="M 720,480 L 740,480 L 740,490 L 410,490 L 410,480" class="line-flow" id="flow-res-db" stroke="rgb(20, 184, 166)" />
+                </svg>
+
+                <!-- Nodo: Frontend Cliente -->
+                <div class="node-card node-front" id="node-front" onclick="selectNode('front')">
+                    <div class="node-icon">💻</div>
+                    <div class="node-info-text">
+                        <h3>Frontend</h3>
+                        <p>Puerto 3001</p>
+                    </div>
+                </div>
+
+                <!-- Nodo: API Gateway -->
+                <div class="node-card node-gateway" id="node-gateway" onclick="selectNode('gateway')">
+                    <div class="node-icon">🛡️</div>
+                    <div class="node-info-text">
+                        <h3>API Gateway</h3>
+                        <p>Puerto 5000</p>
+                    </div>
+                </div>
+
+                <!-- Nodo: Auth Service -->
+                <div class="node-card node-service-auth" id="node-auth" onclick="selectNode('auth')">
+                    <div class="node-icon">🔐</div>
+                    <div class="node-info-text">
+                        <h3>Auth Service</h3>
+                        <p>Puerto 5001</p>
+                    </div>
+                </div>
+
+                <!-- Nodo: Documents Service -->
+                <div class="node-card node-service-docs" id="node-docs" onclick="selectNode('docs')">
+                    <div class="node-icon">📄</div>
+                    <div class="node-info-text">
+                        <h3>Documents Service</h3>
+                        <p>Puerto 5002</p>
+                    </div>
+                </div>
+
+                <!-- Nodo: Collections Service -->
+                <div class="node-card node-service-col" id="node-col" onclick="selectNode('col')">
+                    <div class="node-icon">🗂️</div>
+                    <div class="node-info-text">
+                        <h3>Collections Service</h3>
+                        <p>Puerto 5003</p>
+                    </div>
+                </div>
+
+                <!-- Nodo: Comments Service -->
+                <div class="node-card node-service-comm" id="node-comm" onclick="selectNode('comm')">
+                    <div class="node-icon">💬</div>
+                    <div class="node-info-text">
+                        <h3>Comments Service</h3>
+                        <p>Puerto 5004</p>
+                    </div>
+                </div>
+
+                <!-- Nodo: Research Service -->
+                <div class="node-card node-service-res" id="node-res" onclick="selectNode('res')">
+                    <div class="node-icon">🔬</div>
+                    <div class="node-info-text">
+                        <h3>Research Service</h3>
+                        <p>Puerto 5005</p>
+                    </div>
+                </div>
+
+                <!-- Nodo: Base de Datos -->
+                <div class="node-card node-db" id="node-db" onclick="selectNode('db')">
+                    <div class="node-icon">🛢️</div>
+                    <div class="node-info-text">
+                        <h3>MySQL Database</h3>
+                        <p>Puerto 3306</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel de Inspección (Lado Derecho) -->
+        <div class="inspector-panel" id="inspector">
+            <div class="inspector-placeholder" id="inspector-empty-state">
+                <div class="inspector-placeholder-icon">🗺️</div>
+                <h2>Explorador del Sistema</h2>
+                <p>Haz clic en cualquier nodo o microservicio del mapa arquitectónico de la izquierda para desplegar sus detalles técnicos, responsabilidades, puertos y endpoints.</p>
+            </div>
+            
+            <!-- Contenido dinámico inyectado por JavaScript -->
+            <div id="inspector-content" style="display: none;">
+                <div class="inspector-header">
+                    <div class="logo-icon" id="inspector-icon" style="background: rgba(var(--badge-color), 0.15);">🏢</div>
+                    <div class="inspector-title-area">
+                        <h2 id="inspector-name">Service Name</h2>
+                        <p id="inspector-subtitle">Subtitle</p>
+                    </div>
+                    <div class="inspector-badge" id="inspector-port-badge">PORT</div>
+                </div>
+
+                <div>
+                    <h4 class="inspector-section-title">Descripción del Componente</h4>
+                    <p id="inspector-desc" style="font-size: 0.9rem; line-height: 1.6; color: var(--text-secondary);">Descripción detallada del microservicio y su rol dentro de la arquitectura de la plataforma del museo.</p>
+                </div>
+
+                <div>
+                    <h4 class="inspector-section-title">Estructura & Metadatos</h4>
+                    <div class="inspector-card-meta">
+                        <div class="meta-item">
+                            <span class="meta-label">Ubicación del Código:</span>
+                            <span class="meta-value meta-code" id="inspector-path">/auth-service</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Archivo de Entrada:</span>
+                            <span class="meta-value meta-code" id="inspector-entry">app.py</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Tecnologías Clave:</span>
+                            <span class="meta-value" id="inspector-tech">Python, Flask, PyMySQL</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="inspector-endpoints-section">
+                    <h4 class="inspector-section-title">Endpoints Administrados</h4>
+                    <div class="endpoint-list" id="inspector-endpoints">
+                        <!-- Items de endpoint inyectados aquí -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- PESTAÑA 2: MODELOS Y ESQUEMAS DE BASE DE DATOS -->
+    <div class="db-schema-panel" id="tab-db-content">
+        <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 1.6rem; color: white;">🛢️ Esquema Físico y Relacional de Datos (MySQL)</h2>
+        <p style="color: var(--text-secondary); font-size: 0.95rem; margin-top: -1rem; max-width: 800px;">
+            El sistema utiliza una base de datos centralizada en MySQL que mapea las relaciones de autenticación, almacenamiento de documentos, colecciones de investigación y sistema de comentarios estructurados. A continuación se detallan las tablas definidas físicamente en <code style="font-family: monospace; background: rgba(0,0,0,0.3); padding: 0.15rem 0.4rem; border-radius: 4px; border: 1px solid var(--border-color);">database/init_databases.sql</code>.
+        </p>
+
+        <div class="db-grid">
+            <!-- TABLA USERS -->
+            <div class="db-table-card">
+                <div class="db-table-header">👤 users</div>
+                <div class="db-table-fields">
+                    <div class="db-field"><span class="field-name pk">id</span><span class="field-type">INT (AUTO_INC)</span></div>
+                    <div class="db-field"><span class="field-name">email</span><span class="field-type">VARCHAR(255) [UNIQUE]</span></div>
+                    <div class="db-field"><span class="field-name">password_hash</span><span class="field-type">VARCHAR(255)</span></div>
+                    <div class="db-field"><span class="field-name">nombre</span><span class="field-type">VARCHAR(255)</span></div>
+                    <div class="db-field"><span class="field-name">rol</span><span class="field-type">ENUM('investigador', 'invitado')</span></div>
+                    <div class="db-field"><span class="field-name">institucion</span><span class="field-type">VARCHAR(255)</span></div>
+                    <div class="db-field"><span class="field-name">google_id</span><span class="field-type">VARCHAR(255)</span></div>
+                    <div class="db-field"><span class="field-name">avatar_url</span><span class="field-type">VARCHAR(500)</span></div>
+                    <div class="db-field"><span class="field-name">is_active</span><span class="field-type">BOOLEAN (DEFAULT TRUE)</span></div>
+                    <div class="db-field"><span class="field-name">created_at</span><span class="field-type">DATETIME</span></div>
+                </div>
+            </div>
+
+            <!-- TABLA DOCUMENTS -->
+            <div class="db-table-card">
+                <div class="db-table-header">📄 documents</div>
+                <div class="db-table-fields">
+                    <div class="db-field"><span class="field-name pk">id</span><span class="field-type">INT (AUTO_INC)</span></div>
+                    <div class="db-field"><span class="field-name">titulo</span><span class="field-type">VARCHAR(255)</span></div>
+                    <div class="db-field"><span class="field-name">descripcion</span><span class="field-type">TEXT</span></div>
+                    <div class="db-field"><span class="field-name">autor</span><span class="field-type">VARCHAR(255)</span></div>
+                    <div class="db-field"><span class="field-name">file_path</span><span class="field-type">VARCHAR(500)</span></div>
+                    <div class="db-field"><span class="field-name">is_publico</span><span class="field-type">BOOLEAN</span></div>
+                    <div class="db-field"><span class="field-name fk">created_by</span><span class="field-type">INT (Ref: users.id)</span></div>
+                    <div class="db-field"><span class="field-name">visualizaciones</span><span class="field-type">INT (DEFAULT 0)</span></div>
+                    <div class="db-field"><span class="field-name">descargas</span><span class="field-type">INT (DEFAULT 0)</span></div>
+                    <div class="db-field"><span class="field-name">created_at</span><span class="field-type">DATETIME</span></div>
+                </div>
+            </div>
+
+            <!-- TABLA COLLECTIONS -->
+            <div class="db-table-card">
+                <div class="db-table-header">🗂️ collections</div>
+                <div class="db-table-fields">
+                    <div class="db-field"><span class="field-name pk">id</span><span class="field-type">INT (AUTO_INC)</span></div>
+                    <div class="db-field"><span class="field-name">titulo</span><span class="field-type">VARCHAR(255)</span></div>
+                    <div class="db-field"><span class="field-name">descripcion</span><span class="field-type">TEXT</span></div>
+                    <div class="db-field"><span class="field-name fk">created_by</span><span class="field-type">INT (Ref: users.id)</span></div>
+                    <div class="db-field"><span class="field-name">is_publica</span><span class="field-type">BOOLEAN</span></div>
+                    <div class="db-field"><span class="field-name">created_at</span><span class="field-type">DATETIME</span></div>
+                </div>
+            </div>
+
+            <!-- TABLA COLLECTION_DOCUMENTS -->
+            <div class="db-table-card">
+                <div class="db-table-header">🔗 collection_documents</div>
+                <div class="db-table-fields">
+                    <div class="db-field"><span class="field-name pk fk">collection_id</span><span class="field-type">INT (Ref: collections.id)</span></div>
+                    <div class="db-field"><span class="field-name pk fk">document_id</span><span class="field-type">INT (Ref: documents.id)</span></div>
+                    <div class="db-field"><span class="field-name">added_at</span><span class="field-type">DATETIME</span></div>
+                </div>
+            </div>
+
+            <!-- TABLA COMMENTS -->
+            <div class="db-table-card">
+                <div class="db-table-header">💬 comments</div>
+                <div class="db-table-fields">
+                    <div class="db-field"><span class="field-name pk">id</span><span class="field-type">INT (AUTO_INC)</span></div>
+                    <div class="db-field"><span class="field-name">contenido</span><span class="field-type">TEXT</span></div>
+                    <div class="db-field"><span class="field-name fk">user_id</span><span class="field-type">INT (Ref: users.id)</span></div>
+                    <div class="db-field"><span class="field-name">item_type</span><span class="field-type">ENUM('documento', 'coleccion')</span></div>
+                    <div class="db-field"><span class="field-name">item_id</span><span class="field-type">INT (Ref: doc/col id)</span></div>
+                    <div class="db-field"><span class="field-name fk">parent_comment_id</span><span class="field-type">INT (Ref: self)</span></div>
+                    <div class="db-field"><span class="field-name">likes</span><span class="field-type">INT (DEFAULT 0)</span></div>
+                    <div class="db-field"><span class="field-name">created_at</span><span class="field-type">DATETIME</span></div>
+                </div>
+            </div>
+
+            <!-- TABLA TAGS -->
+            <div class="db-table-card">
+                <div class="db-table-header">🏷️ tags</div>
+                <div class="db-table-fields">
+                    <div class="db-field"><span class="field-name pk">id</span><span class="field-type">INT (AUTO_INC)</span></div>
+                    <div class="db-field"><span class="field-name">nombre</span><span class="field-type">VARCHAR(100) [UNIQUE]</span></div>
+                    <div class="db-field"><span class="field-name">created_at</span><span class="field-type">DATETIME</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Datos detallados del sistema
+        const systemData = {
+            front: {
+                name: "React Frontend App",
+                subtitle: "Interfaz Web de Usuario",
+                port: "Port 3001",
+                desc: "Aplicación Web interactiva de una sola página (SPA) construida en React. Permite a los investigadores del museo registrarse, ingresar sesión, explorar colecciones, subir hallazgos arqueológicos, comentar documentos históricos y visualizar estadísticas en tableros interactivos.",
+                path: "/frontend",
+                entry: "src/main.jsx",
+                tech: "React, Vite, CSS Modules, Axios",
+                glow: "14, 165, 233",
+                icon: "💻",
+                connections: ["line-front-gw"],
+                endpoints: [
+                    { method: "GET", path: "/", desc: "Acceso al Dashboard Principal" },
+                    { method: "GET", path: "/login", desc: "Formulario de Inicio de Sesión" },
+                    { method: "GET", path: "/collections", desc: "Navegación de Colecciones Arqueológicas" },
+                    { method: "GET", path: "/documents/upload", desc: "Interfaz de Carga de Documentos e Imágenes" },
+                    { method: "GET", path: "/admin/stats", desc: "Panel de Analíticas y Reportes del Museo" }
+                ]
+            },
+            gateway: {
+                name: "API Gateway Central",
+                subtitle: "Pasarela Unificada de Rutas",
+                port: "Port 5000",
+                desc: "Componente central del backend que actúa como intermediario único y seguro entre el cliente Frontend y la red interna de microservicios. Se encarga de mitigar problemas de CORS, interceptar solicitudes, verificar encabezados de autenticación JWT y realizar el ruteo interno correspondiente sin exponer los puertos internos.",
+                path: "/api-gateway",
+                entry: "app.py",
+                tech: "Python, Flask, Flask-CORS, Requests",
+                glow: "168, 85, 247",
+                icon: "🛡️",
+                connections: ["line-front-gw", "line-gw-auth", "line-gw-docs", "line-gw-col", "line-gw-comm", "line-gw-res"],
+                endpoints: [
+                    { method: "POST", path: "/api/v1/auth/*", desc: "Proxy redirigido a Auth Service (Puerto 5001)" },
+                    { method: "GET/POST", path: "/api/v1/documents/*", desc: "Proxy redirigido a Documents Service (Puerto 5002)" },
+                    { method: "GET/POST", path: "/api/v1/collections/*", desc: "Proxy redirigido a Collections Service (Puerto 5003)" },
+                    { method: "POST", path: "/api/v1/comments/*", desc: "Proxy redirigido a Comments Service (Puerto 5004)" },
+                    { method: "GET", path: "/health", desc: "Verificación de salud de la pasarela" }
+                ]
+            },
+            auth: {
+                name: "Auth Service",
+                subtitle: "Microservicio de Sesiones y Seguridad",
+                port: "Port 5001",
+                desc: "Microservicio independiente responsable de la creación de cuentas de investigadores del museo, registro de contraseñas mediante encriptación segura con bcrypt, inicio de sesión mediante credenciales tradicionales o integración de Google OAuth2 y la firma y verificación de tokens en formato JWT (HS256).",
+                path: "/auth-service",
+                entry: "app.py",
+                tech: "Python, Flask, PyJWT, Flask-Bcrypt, SQLAlchemy",
+                glow: "244, 63, 94",
+                icon: "🔐",
+                connections: ["line-gw-auth", "line-auth-db"],
+                endpoints: [
+                    { method: "POST", path: "/api/v1/auth/register", desc: "Registro de Investigador con validaciones" },
+                    { method: "POST", path: "/api/v1/auth/login", desc: "Autenticación de credenciales y generación de JWT" },
+                    { method: "POST", path: "/api/v1/auth/google", desc: "Login/Registro simplificado usando Google OAuth2 token" },
+                    { method: "GET", path: "/api/v1/auth/profile", desc: "Obtención de datos privados del perfil del usuario" }
+                ]
+            },
+            docs: {
+                name: "Documents Service",
+                subtitle: "Gestión de Archivos y Metadatos Arqueológicos",
+                port: "Port 5002",
+                desc: "Servicio encargado de administrar la carga, almacenamiento, catalogación y visualización de documentos técnicos, investigaciones históricas e imágenes de restos arqueológicos. Gestiona además el conteo automatizado de visualizaciones/descargas y el etiquetado por palabras clave (Tags).",
+                path: "/documents-service",
+                entry: "app.py",
+                tech: "Python, Flask, SQLAlchemy, PyMySQL",
+                glow: "59, 130, 246",
+                icon: "📄",
+                connections: ["line-gw-docs", "line-docs-db"],
+                endpoints: [
+                    { method: "GET", path: "/api/v1/documents", desc: "Lista paginada de documentos públicos" },
+                    { method: "POST", path: "/api/v1/documents", desc: "Registro de metadatos de un nuevo documento técnico" },
+                    { method: "GET", path: "/api/v1/documents/search", desc: "Buscador inteligente por autor, título o fecha" },
+                    { method: "POST", path: "/api/v1/tags", desc: "Asignación de etiquetas descriptivas" }
+                ]
+            },
+            col: {
+                name: "Collections Service",
+                subtitle: "Organización de Colecciones y Suscripciones",
+                port: "Port 5003",
+                desc: "Microservicio que permite agrupar múltiples documentos arqueológicos en colecciones temáticas (como 'Cultura Tiwanaku', 'Cerámica Precolombina'). Proporciona herramientas interactivas para que los usuarios marquen colecciones como favoritas, califiquen su relevancia (Ratings), se suscriban a actualizaciones y las compartan.",
+                path: "/collections-service",
+                entry: "app.py",
+                tech: "Python, Flask, SQLAlchemy, PyMySQL",
+                glow: "16, 185, 129",
+                icon: "🗂️",
+                connections: ["line-gw-col", "line-col-db"],
+                endpoints: [
+                    { method: "GET", path: "/api/v1/collections", desc: "Listar colecciones disponibles del museo" },
+                    { method: "POST", path: "/api/v1/collections", desc: "Creación de nueva colección de investigación" },
+                    { method: "POST", path: "/api/v1/collections/<id>/documents", desc: "Vincular documento específico a una colección" },
+                    { method: "POST", path: "/api/v1/collections/<id>/subscribe", desc: "Suscribirse a cambios en la colección" }
+                ]
+            },
+            comm: {
+                name: "Comments Service",
+                subtitle: "Foro e Interacciones entre Investigadores",
+                port: "Port 5004",
+                desc: "Microservicio dedicado a la comunicación e interacción colaborativa de los investigadores. Gestiona el registro de comentarios sobre documentos y colecciones arqueológicas, permitiendo además respuestas anidadas de forma infinita (hilos de conversación), likes y edición o eliminación de opiniones.",
+                path: "/comments-service",
+                entry: "app.py",
+                tech: "Python, Flask, SQLAlchemy, PyMySQL",
+                glow: "236, 72, 153",
+                icon: "💬",
+                connections: ["line-gw-comm", "line-comm-db"],
+                endpoints: [
+                    { method: "GET", path: "/api/v1/documents/<id>/comments", desc: "Obtener hilos de conversación de un documento" },
+                    { method: "POST", path: "/api/v1/documents/<id>/comments", desc: "Publicar un nuevo comentario o responder a uno existente" },
+                    { method: "PUT", path: "/api/v1/comments/<id>", desc: "Modificar contenido del comentario (si eres el autor)" },
+                    { method: "POST", path: "/api/v1/comments/<id>/like", desc: "Incrementar votos positivos del comentario" }
+                ]
+            },
+            res: {
+                name: "Research Service",
+                subtitle: "Espacios de Trabajo Colaborativo",
+                port: "Port 5005",
+                desc: "Microservicio enfocado en proveer herramientas colaborativas y de análisis avanzado para proyectos de investigación conjuntos en el museo. Permite sincronizar metadatos, estructurar notas de campo conjuntas y verificar hipótesis y hallazgos.",
+                path: "/research-service",
+                entry: "app.py",
+                tech: "Python, Flask, SQLAlchemy, PyMySQL",
+                glow: "20, 184, 166",
+                icon: "🔬",
+                connections: ["line-gw-res", "line-res-db"],
+                endpoints: [
+                    { method: "GET", path: "/api/v1/research/projects", desc: "Listar proyectos arqueológicos colaborativos" },
+                    { method: "POST", path: "/api/v1/research/notes", desc: "Añadir notas técnicas y observaciones a las fichas" },
+                    { method: "PUT", path: "/api/v1/research/sync", desc: "Sincronización de fichas de excavación" }
+                ]
+            },
+            db: {
+                name: "MySQL Database Server",
+                subtitle: "Almacenamiento de Datos del Negocio",
+                port: "Port 3306",
+                desc: "Servidor relacional central de base de datos MySQL. En él se encuentran persistidas todas las tablas relacionales de la plataforma. La base de datos mantiene las claves foráneas, restricciones de integridad referencial y las cascadas de eliminación en caso de que un registro sea purgado.",
+                path: "/database",
+                entry: "init_databases.sql",
+                tech: "MySQL 8.0, SQL Relacional",
+                glow: "100, 116, 139",
+                icon: "🛢️",
+                connections: ["line-auth-db", "line-docs-db", "line-col-db", "line-comm-db", "line-res-db"],
+                endpoints: [
+                    { method: "SQL", path: "users", desc: "Tabla de cuentas y roles de investigadores" },
+                    { method: "SQL", path: "documents", desc: "Tabla de metadatos de archivos de investigación" },
+                    { method: "SQL", path: "collections", desc: "Tabla de agrupaciones de colecciones de museo" },
+                    { method: "SQL", path: "collection_documents", desc: "Tabla asociativa intermedia (Muchos a Muchos)" },
+                    { method: "SQL", path: "comments", desc: "Tabla con soporte para hilos de discusión anidados" }
+                ]
+            }
+        };
+
+        let activeNode = null;
+        let flowAnimationsActive = false;
+
+        // Cambiar pestañas
+        function switchTab(tab) {
+            const archBtn = document.getElementById("btn-tab-arch");
+            const dbBtn = document.getElementById("btn-tab-db");
+            const archContent = document.getElementById("tab-arch-content");
+            const dbContent = document.getElementById("tab-db-content");
+
+            if (tab === "arch") {
+                archBtn.classList.add("btn-active");
+                dbBtn.classList.remove("btn-active");
+                archContent.style.display = "grid";
+                dbContent.style.display = "none";
+            } else {
+                dbBtn.classList.add("btn-active");
+                archBtn.classList.remove("btn-active");
+                dbContent.style.display = "flex";
+                archContent.style.display = "none";
+            }
+        }
+
+        // Selección Interactiva de Nodos en el Diagrama
+        function selectNode(nodeId) {
+            // Deseleccionar nodos anteriores
+            const allNodes = document.querySelectorAll(".node-card");
+            allNodes.forEach(node => node.classList.remove("selected"));
+
+            // Desactivar cables iluminados anteriores
+            const allLines = document.querySelectorAll(".connection-line");
+            const allFlows = document.querySelectorAll(".line-flow");
+            allLines.forEach(line => {
+                line.classList.remove("active");
+                line.style.stroke = "rgba(255, 255, 255, 0.1)";
+            });
+            allFlows.forEach(flow => {
+                flow.classList.remove("active");
+            });
+
+            // Si se hace clic en el mismo nodo ya seleccionado, se limpia la selección (Empty State)
+            if (activeNode === nodeId) {
+                activeNode = null;
+                document.getElementById("inspector-empty-state").style.display = "block";
+                document.getElementById("inspector-content").style.display = "none";
+                return;
+            }
+
+            // Seleccionar nuevo nodo
+            activeNode = nodeId;
+            const targetNode = document.getElementById(`node-${nodeId}`);
+            targetNode.classList.add("selected");
+
+            const data = systemData[nodeId];
+
+            // Inyectar datos en el panel inspector
+            document.getElementById("inspector-empty-state").style.display = "none";
+            const content = document.getElementById("inspector-content");
+            content.style.display = "flex";
+            content.style.flexDirection = "column";
+            content.style.gap = "1.75rem";
+
+            document.getElementById("inspector-icon").innerHTML = data.icon;
+            document.getElementById("inspector-icon").style.color = `rgb(${data.glow})`;
+            document.getElementById("inspector-icon").style.boxShadow = `inset 0 0 10px rgba(${data.glow}, 0.1)`;
+            document.getElementById("inspector-name").innerText = data.name;
+            document.getElementById("inspector-subtitle").innerText = data.subtitle;
+            
+            const portBadge = document.getElementById("inspector-port-badge");
+            portBadge.innerText = data.port;
+            portBadge.style.color = `rgb(${data.glow})`;
+            portBadge.style.borderColor = `rgba(${data.glow}, 0.3)`;
+            portBadge.style.background = `rgba(${data.glow}, 0.15)`;
+            
+            document.getElementById("inspector").style.setProperty('--badge-color', data.glow);
+
+            document.getElementById("inspector-desc").innerText = data.desc;
+            document.getElementById("inspector-path").innerText = data.path;
+            document.getElementById("inspector-entry").innerText = data.entry;
+            document.getElementById("inspector-tech").innerText = data.tech;
+
+            // Inyectar endpoints
+            const listContainer = document.getElementById("inspector-endpoints");
+            listContainer.innerHTML = "";
+            data.endpoints.forEach(ep => {
+                const epItem = document.createElement("div");
+                epItem.className = "endpoint-item";
+                
+                const methodLower = ep.method.toLowerCase();
+                let methodClass = "method-get";
+                if (methodLower === "post") methodClass = "method-post";
+                else if (methodLower === "put") methodClass = "method-put";
+                else if (methodLower === "delete") methodClass = "method-delete";
+                else if (methodLower === "sql") methodClass = "method-post";
+
+                epItem.innerHTML = `
+                    <span class="endpoint-method ${methodClass}">${ep.method}</span>
+                    <span class="endpoint-path">${ep.path}</span>
+                    <span class="endpoint-target">${ep.desc}</span>
+                `;
+                listContainer.appendChild(epItem);
+            });
+
+            // Iluminar cables asociados
+            data.connections.forEach(connId => {
+                const line = document.getElementById(connId);
+                if (line) {
+                    line.classList.add("active");
+                    line.style.stroke = `rgba(${data.glow}, 0.8)`;
+                    line.style.filter = "url(#glow-purple)";
+                }
+
+                // Activar animación de partículas si el botón global está encendido
+                if (flowAnimationsActive) {
+                    const flowId = connId.replace("line-", "flow-");
+                    const flow = document.getElementById(flowId);
+                    if (flow) {
+                        flow.classList.add("active");
+                    }
+                }
+            });
+        }
+
+        // Toggles de la Animación de Flujo del Cableado
+        function toggleFlowAnimations() {
+            const btn = document.getElementById("btn-toggle-flow");
+            flowAnimationsActive = !flowAnimationsActive;
+
+            if (flowAnimationsActive) {
+                btn.classList.add("btn-active");
+                btn.innerText = "⚡ Detener Flujos";
+                
+                // Si hay un nodo seleccionado en este momento, activar sus partículas
+                if (activeNode) {
+                    const data = systemData[activeNode];
+                    data.connections.forEach(connId => {
+                        const flowId = connId.replace("line-", "flow-");
+                        const flow = document.getElementById(flowId);
+                        if (flow) {
+                            flow.classList.add("active");
+                        }
+                    });
+                }
+            } else {
+                btn.classList.remove("btn-active");
+                btn.innerText = "⚡ Animar Flujos";
+                
+                // Desactivar todos los flujos activos
+                const allFlows = document.querySelectorAll(".line-flow");
+                allFlows.forEach(flow => {
+                    flow.classList.remove("active");
+                });
+            }
+        }
+    </script>
+</body>
+</html>
