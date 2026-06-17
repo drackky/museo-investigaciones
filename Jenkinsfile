@@ -27,6 +27,7 @@ pipeline {
                 bat 'python -m venv %VENV%'
                 bat '%VENV%\\Scripts\\pip install --upgrade pip'
                 bat '%VENV%\\Scripts\\pip install wheel setuptools'
+                bat '%VENV%\\Scripts\\pip install pytest-html'
             }
         }
 
@@ -121,6 +122,23 @@ pipeline {
             }
         }
     }
+    stage('Generar Reporte') {
+    steps {
+        bat '%VENV%\\Scripts\\pytest "pruebas de caja blanca\\test_caja_blanca.py" "pruebas de caja negra\\test_caja_negra.py" --html=reporte_pruebas.html --self-contained-html -v'
+    }
+    post {
+        always {
+            publishHTML([
+                allowMissing: false,
+                alwaysLinkToLastBuild: true,
+                keepAll: true,
+                reportDir: '.',
+                reportFiles: 'reporte_pruebas.html',
+                reportName: 'Reporte de Pruebas'
+            ])
+        }
+    }
+}
 
     post {
         always {
