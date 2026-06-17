@@ -26,8 +26,7 @@ pipeline {
             steps {
                 bat 'python -m venv %VENV%'
                 bat '%VENV%\\Scripts\\pip install --upgrade pip'
-                bat '%VENV%\\Scripts\\pip install wheel setuptools'
-                bat '%VENV%\\Scripts\\pip install pytest-html'
+                bat '%VENV%\\Scripts\\pip install wheel setuptools pytest-html'
             }
         }
 
@@ -86,30 +85,21 @@ pipeline {
         }
 
         stage('Run Tests') {
-            parallel {
-                stage('Caja Blanca') {
-                    steps {
-                        dir('pruebas de caja blanca') {
-                            bat '%VENV%\\Scripts\\pytest test_caja_blanca.py --junitxml=report-caja-blanca.xml -v'
-                        }
-                    }
-                    post {
-                        always {
-                            junit 'pruebas de caja blanca/report-caja-blanca.xml'
-                        }
-                    }
-                }
-                stage('Caja Negra') {
-                    steps {
-                        dir('pruebas de caja negra') {
-                            bat '%VENV%\\Scripts\\pytest test_caja_negra.py --junitxml=report-caja-negra.xml -v'
-                        }
-                    }
-                    post {
-                        always {
-                            junit 'pruebas de caja negra/report-caja-negra.xml'
-                        }
-                    }
+            steps {
+                bat '%VENV%\\Scripts\\pip install pytest-html'
+                bat '%VENV%\\Scripts\\pytest "pruebas de caja blanca\\test_caja_blanca.py" "pruebas de caja negra\\test_caja_negra.py" --junitxml=reporte_junit.xml --html=reporte_pruebas.html --self-contained-html -v'
+            }
+            post {
+                always {
+                    junit 'reporte_junit.xml'
+                    publishHTML([
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: '.',
+                        reportFiles: 'reporte_pruebas.html',
+                        reportName: 'Reporte de Pruebas'
+                    ])
                 }
             }
         }
@@ -122,23 +112,6 @@ pipeline {
             }
         }
     }
-    stage('Generar Reporte') {
-    steps {
-        bat '%VENV%\\Scripts\\pytest "pruebas de caja blanca\\test_caja_blanca.py" "pruebas de caja negra\\test_caja_negra.py" --html=reporte_pruebas.html --self-contained-html -v'
-    }
-    post {
-        always {
-            publishHTML([
-                allowMissing: false,
-                alwaysLinkToLastBuild: true,
-                keepAll: true,
-                reportDir: '.',
-                reportFiles: 'reporte_pruebas.html',
-                reportName: 'Reporte de Pruebas'
-            ])
-        }
-    }
-}
 
     post {
         always {
