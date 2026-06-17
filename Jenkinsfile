@@ -86,7 +86,6 @@ pipeline {
 
         stage('Run Tests') {
             steps {
-                bat '%VENV%\\Scripts\\pip install pytest-html'
                 bat '%VENV%\\Scripts\\pytest "pruebas de caja blanca\\test_caja_blanca.py" "pruebas de caja negra\\test_caja_negra.py" --junitxml=reporte_junit.xml --html=reporte_pruebas.html --self-contained-html -v'
             }
             post {
@@ -121,7 +120,9 @@ pipeline {
             archiveArtifacts artifacts: 'frontend/dist/**', fingerprint: true
             echo 'Build completado exitosamente'
         }
-failure {
-    echo 'Build fallido'
+        failure {
+            echo 'Build fallido'
+        }
+    }
 }
 }
