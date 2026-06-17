@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        VENV = "${workspace}\\.venv"
+        VENV = "${WORKSPACE}\\.venv"
         FLASK_ENV = 'testing'
         JWT_SECRET_KEY = 'test-secret-key'
         DB_HOST = 'localhost'
